@@ -1,6 +1,6 @@
 # Phase 1 — tap-drill flavor wheel
 
-Full plan: `~/.claude/plans/i-want-to-scaffold-giggly-pony.md` (approved 2026-08-07).
+Full plan: [phase_1_plan.md](phase_1_plan.md) (approved 2026-08-07).
 
 ## Scope
 Tap-tap-tap only. No press-drag gesture, no fancy animation — that is Phase 2.
