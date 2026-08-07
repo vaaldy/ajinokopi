@@ -1,0 +1,40 @@
+# Coffee flavor wheel data — edit freely, reload the page to see changes.
+# Two levels: Category -> notes. List order = wheel order (put your "intensity
+# axis" into the ordering, e.g. sweet-tart oranges first, sharp citric last).
+# color: base hue for the category; note sectors are auto-shaded from it.
+
+Floral:
+  color: "#d45d9e"
+  notes: [jasmine, orange blossom, coffee blossom, rose, chamomile, lavender, hibiscus]
+
+Citrus:
+  color: "#f2a531"
+  notes: [navel orange, sicilian orange, mandarin, grapefruit, lime, lemon, bergamot]
+
+Stonefruit:
+  color: "#e2555f"
+  notes: [peach, nectarine, apricot, plum, cherry]
+
+Berries:
+  color: "#8e4585"
+  notes: [strawberry, raspberry, blueberry, blackberry, blackcurrant]
+
+Tropical:
+  color: "#f07f2d"
+  notes: [pineapple, mango, papaya, passionfruit, lychee, banana]
+
+Sweet:
+  color: "#b5651d"
+  notes: [honey, caramel, brown sugar, muscovado, maple syrup, molasses, vanilla]
+
+Nutty/Cocoa:
+  color: "#7b4b2a"
+  notes: [almond, hazelnut, peanut, milk chocolate, dark chocolate, cocoa nibs]
+
+Spice:
+  color: "#9c4722"
+  notes: [cinnamon, clove, nutmeg, black pepper, anise]
+
+Defects:
+  color: "#6e6259"
+  notes: [papery, baggy, potato, phenolic, over-ferment, moldy, rubber]

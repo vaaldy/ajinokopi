@@ -1,0 +1,6 @@
+name: ajinokopi
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - nodejs>=20  # runs Vite/React toolchain; JS deps themselves live in package.json
