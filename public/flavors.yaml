@@ -1,40 +1,122 @@
 # Coffee flavor wheel data — edit freely, reload the page to see changes.
 # Two levels: Category -> notes. List order = wheel order (put your "intensity
 # axis" into the ordering, e.g. sweet-tart oranges first, sharp citric last).
-# color: base hue for the category; note sectors are auto-shaded from it.
+#
+#   color       base hue for the family arc (tier 1)
+#   notes       the family's notes, in wheel order (tier 2)
+#   noteColors  optional per-note colour so each note reads as its own
+#               real-world colour; notes left out fall back to a shade of
+#               `color`
+#   groups      optional split of `notes` into concentric radial bands, e.g.
+#               [3, 3, 5] = nuts / cocoa / spice inside one family
+#
+# Ring position is NOT this file's order: families are seated by "power" (note
+# count) so the big ones land top/bottom where a portrait screen has headroom.
 
 Floral:
-  color: "#d45d9e"
+  color: "#f0e7dc"
   notes: [jasmine, orange blossom, coffee blossom, rose, chamomile, lavender, hibiscus]
+  noteColors:
+    jasmine: "#f5f0e6"
+    orange blossom: "#f8d3a8"
+    coffee blossom: "#f6dcd2"
+    rose: "#f3bcc8"
+    chamomile: "#f7e9b0"
+    lavender: "#cfc3e8"
+    hibiscus: "#e8a3b8"
 
 Citrus:
-  color: "#f2a531"
+  color: "#f7d7a2"
   notes: [navel orange, sicilian orange, mandarin, grapefruit, lime, lemon, bergamot]
+  noteColors:
+    navel orange: "#f9c489"
+    sicilian orange: "#f4b06e"
+    mandarin: "#fbd0a0"
+    grapefruit: "#f5b4ac"
+    lime: "#cfe5a8"
+    lemon: "#f7e79a"
+    bergamot: "#e2e2a6"
 
 Stonefruit:
-  color: "#e2555f"
+  color: "#f6c3ad"
   notes: [peach, nectarine, apricot, plum, cherry]
+  noteColors:
+    peach: "#f9c9ac"
+    nectarine: "#f6b39c"
+    apricot: "#f8cf9e"
+    plum: "#c9a3c4"
+    cherry: "#eda3a8"
 
 Berries:
-  color: "#8e4585"
+  color: "#d6b3d0"
   notes: [strawberry, raspberry, blueberry, blackberry, blackcurrant]
+  noteColors:
+    strawberry: "#f4a9b0"
+    raspberry: "#e79db4"
+    blueberry: "#adb8dd"
+    blackberry: "#b8a3c9"
+    blackcurrant: "#a897c0"
 
 Tropical:
-  color: "#f07f2d"
+  color: "#f5d9a8"
   notes: [pineapple, mango, papaya, passionfruit, lychee, banana]
+  noteColors:
+    pineapple: "#f6e3a2"
+    mango: "#f9cf8e"
+    papaya: "#f6bfa0"
+    passionfruit: "#e7d79c"
+    lychee: "#f2ddd8"
+    banana: "#f4e8ad"
 
 Sweet:
-  color: "#b5651d"
-  notes: [honey, caramel, brown sugar, muscovado, maple syrup, molasses, vanilla]
+  color: "#e8c79a"
+  notes: [honey, caramel, brown sugar, muscovado, sugar cane, raw sugar, wheatgrass]
+  noteColors:
+    honey: "#f2d494"
+    caramel: "#e6bb8e"
+    brown sugar: "#d9ad8b"
+    muscovado: "#c99f83"
+    sugar cane: "#e3e0b0"
+    raw sugar: "#eddcb4"
+    wheatgrass: "#c7dfa4"
 
-Nutty/Cocoa:
-  color: "#7b4b2a"
-  notes: [almond, hazelnut, peanut, milk chocolate, dark chocolate, cocoa nibs]
+Nutty/Cocoa/Spice:
+  color: "#d5bba2"
+  groups: [3, 3, 5]
+  notes: [almond, hazelnut, peanut, milk chocolate, dark chocolate, cocoa nibs, cinnamon, clove, nutmeg, black pepper, anise]
+  noteColors:
+    almond: "#e8d7bd"
+    hazelnut: "#dcbd9d"
+    peanut: "#e3caa4"
+    milk chocolate: "#c8a289"
+    dark chocolate: "#a9887a"
+    cocoa nibs: "#bb9a86"
+    cinnamon: "#e0b090"
+    clove: "#c9a08d"
+    nutmeg: "#d8b79a"
+    black pepper: "#b6ada4"
+    anise: "#c0b6a8"
 
-Spice:
-  color: "#9c4722"
-  notes: [cinnamon, clove, nutmeg, black pepper, anise]
+Tea:
+  color: "#cfdcbe"
+  notes: [green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha]
+  noteColors:
+    green tea: "#c9e0b0"
+    oolong: "#e0d3a6"
+    black tea: "#cba894"
+    white tea: "#ece6d6"
+    pu-erh: "#bfa791"
+    matcha: "#b9d69c"
+    hojicha: "#d3b394"
 
 Defects:
-  color: "#6e6259"
+  color: "#cbc6bd"
   notes: [papery, baggy, potato, phenolic, over-ferment, moldy, rubber]
+  noteColors:
+    papery: "#ddd8cf"
+    baggy: "#cfc9bf"
+    potato: "#c6c2b0"
+    phenolic: "#c2b3b3"
+    over-ferment: "#cbb9c4"
+    moldy: "#b9c2b4"
+    rubber: "#b3b0ac"
