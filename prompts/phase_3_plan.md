@@ -29,8 +29,9 @@ plan needs a diagram, it failed.
    untracked. `package-lock.json` is from Aug 11 and *is* tracked. Commit the pnpm lock,
    `git rm package-lock.json`. CI installs with `--frozen-lockfile`, which fails loudly rather than
    silently resolving a different tree — only helps if committed lock is the true one.
-3. **Add `version` field.** `package.json` has none, nothing to diff. Start `0.3.0` (phases 1–2
-   shipped but phone UAT has not happened, so not 1.0.0). First automated release = first bump after.
+3. ~~**Add `version` field.**~~ **Done** — `package.json` carries `"version": "0.1.0"`, set when
+   phase 2 closed. Below 1.0.0 because phone UAT has not happened. First automated release = first
+   bump after this.
 4. **Add `"packageManager": "pnpm@11.3.0"`** so `pnpm/action-setup` pins CI to the laptop's pnpm
    instead of drifting to latest.
 5. **One-time repo setting:** Settings → Pages → Source = **GitHub Actions**. Not a file, cannot be
@@ -97,15 +98,15 @@ builds). Pin every action to a major version tag.
 1. Prerequisites 1–4 (commit wheel.jsx, lockfile swap, `version`, `packageManager`) as one commit.
 2. Prerequisite 5 in repo settings UI.
 3. `ci.yml` alone. Push, confirm green. Validates install/test/build triple in CI before anything deploys.
-4. `release.yml`. Test by hand: `git tag v0.3.0 && git push --tags` → Pages goes live. Proves deploy
+4. `release.yml`. Test by hand: `git tag v0.1.0 && git push --tags` → Pages goes live. Proves deploy
    path in isolation, no tagging logic in the way.
-5. `tag.yml`. Test with a real bump to `0.3.1`.
+5. `tag.yml`. Test with a real bump to `0.1.1`.
 6. Docs: `prompts/phase_3.md`, move *Deploy to GitHub Pages* out of `status.md` Open.
 
 ## Acceptance criteria
 
-- Bump `version` 0.3.0 → 0.3.1, push to main. Within ~2 min, touching nothing else: tag `v0.3.1`
-  exists, Pages serves new build, Release `v0.3.1` listed.
+- Bump `version` 0.1.0 → 0.1.1, push to main. Within ~2 min, touching nothing else: tag `v0.1.1`
+  exists, Pages serves new build, Release `v0.1.1` listed.
 - Push to main *not* changing `version` runs `ci.yml` and nothing else. No tag, no deploy.
 - Red `pnpm test` → **no tag created at all**, not a tag whose deploy failed.
 - Same version pushed twice fails with a clear message, not a duplicate-tag error or silent second deploy.
