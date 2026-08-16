@@ -1,2 +1,9 @@
 node_modules/
 dist/
+
+# Agent docs: AGENTS.md is the canonical one and is committed.
+# CLAUDE.md is a local pointer at it — tool-specific, nothing to share.
+CLAUDE.md
+
+# Per-machine Claude Code state. note-take's canonical copy is prompts/note-take.md.
+.claude/

@@ -43,7 +43,11 @@ export default function App() {
   const exportJson = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(store.brews, null, 2)], { type: 'application/json' }));
-    a.download = 'brews.json';
+    // named for the cup on screen + when it was dumped, so two exports never collide in ~/Downloads
+    const p2 = n => String(n).padStart(2, '0'), d = new Date();
+    const stamp = [d.getDate(), d.getMonth() + 1, d.getHours(), d.getMinutes()].map(p2).join('-');
+    const name = (cur?.name || 'brews').replace(/[^\w -]+/g, '').trim() || 'brews';
+    a.download = `${name} ${stamp}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
