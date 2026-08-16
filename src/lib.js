@@ -438,7 +438,7 @@ export function newBrewDoc(name) {
   };
 }
 
-// Cupping fields arrived after phase 1, so docs written by the old build (and any
+// Cupping fields arrived after v0.1, so docs written by the old build (and any
 // hand-edited import) are filled in on read rather than rejected.
 export function fillBrew(b) {
   const scores = { ...defaultScores() };

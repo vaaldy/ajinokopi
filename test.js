@@ -155,7 +155,7 @@ t('validateBrews: rejects bad doc', !validateBrews([{ name: 1 }]));
 t('validateBrews: rejects non-array', !validateBrews({}));
 t('export/import round-trip', JSON.stringify(JSON.parse(JSON.stringify([doc]))) === JSON.stringify([doc]));
 const old = { _id: 'x', name: 'phase 1 brew', notes: [] };
-t('fillBrew: a phase-1 doc gains the cupping fields', validateBrews([fillBrew(old)]) && fillBrew(old).scores.Intensity === 5);
+t('fillBrew: a pre-v0.2 doc gains the cupping fields', validateBrews([fillBrew(old)]) && fillBrew(old).scores.Intensity === 5);
 t('fillBrew: never clobbers a stored score', fillBrew({ ...old, scores: { Acidity: 9 } }).scores.Acidity === 9);
 t('fillBrew: coerces a score that came back from JSON as a string', fillBrew({ ...old, scores: { Acidity: '9' } }).scores.Acidity === 9);
 t('fillBrew: drops a junk score rather than rendering NaN', fillBrew({ ...old, scores: { Acidity: null } }).scores.Acidity === 7);
