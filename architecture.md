@@ -3,6 +3,7 @@
 React + Vite mobile web app. No backend. Pure logic sits apart from components, stays Node-testable.
 
 ```
+README.md             — human entry point: run locally, how the release pipeline flows
 index.html            — Vite entry (#root + script tag + two Google fonts)
 src/main.jsx          — mounts <App/>, imports styles.css
 src/App.jsx           — screen: title, <Wheel/>, cupping sheet, brew management
@@ -11,7 +12,8 @@ src/lib.js            — ALL pure logic + storage (no React): geometry, colors,
                         pill orbit, fingerprint math, brew store
 src/styles.css        — whole stylesheet
 public/flavors.yaml   — flavor tree, user-editable (Family -> {color, notes[], noteColors?, groups?})
-test.js               — pure-function checks against src/lib.js (`npm test`, plain Node)
+test.js               — pure-function checks against src/lib.js (`pnpm test`, plain Node)
+.github/workflows/    — ci.yml, tag.yml, release.yml: whole release pipeline
 ```
 
 ## Screen
@@ -60,6 +62,12 @@ how far pill labels shrank to fit.
 - Hub tone circles are radial gradients already fading to `stopOpacity 0`, so `feGaussianBlur` over them bought very little — and its `<animateTransform repeatCount="indefinite">` drift meant that blur re-ran every frame, forever, over a filter region 16× disc area. Filter gone. Softness comes from the gradients.
 - **src/wheel.jsx — `<Fingerprint>`**: the hub. One radial gradient per tone over a base coat, clipped to disc, grain wash + vignette on top. Drift uses SVG `<animateTransform>`, not CSS transform, which would escape the clip in some renderers.
 - **src/App.jsx — `<App>`**: state = `flavors` (fetched yaml) + `store` ({brews, currentId}, persisted via effect). `<Wheel>` keyed by brew id, so switching cups resets wheel transient state.
+- **.github/workflows — release pipeline**: `ci.yml` runs install/test/build on every push to main and every PR, deploys nothing. `tag.yml` fires on every push to main: if `version` is already tagged it exits quietly (the state of most pushes), else validates semver, runs the tests, then pushes an annotated `v<semver>` tag as `github-actions[bot]`. `release.yml` builds the tag, uploads `dist/` as a Pages artifact, deploys, and cuts a GitHub Release with auto-generated notes.
+- **`release.yml` has two entry points because a tag pushed with the default `GITHUB_TOKEN` never triggers another workflow.** GitHub's guard against recursive runs. So it declares both `workflow_call` (tag.yml invokes it directly after tagging, passing `tag:`) and `push: tags` (a hand-pushed tag still deploys — the escape hatch). On the `workflow_call` path `github.ref` is main, not the tag, so build checks out `inputs.tag` explicitly and the release step reads `inputs.tag || github.ref_name`.
+- **`tag.yml` asks "is this version tagged yet", never "did package.json change".** Earlier shape diffed `version` against `HEAD~1` behind `paths: ['package.json']`, and stranded the common case: red tests leave no tag, but the follow-up fix commit touches `src/` only, so the tagger never woke again and the version sat unreleased in silence. Tags already record what has shipped, so the diff was redundant state. Now a retry after red tests is free — same `version`, just push the fix. Checkout needs `fetch-tags: true`; without tags the check can never see one and the failure surfaces later as a confusing push error.
+- Tests run *before* the tag is created: a tag is the permanent record of a release, so a red tree must never earn one.
+- **Prerelease suffixes are the iteration currency.** `0.2.1-dev.1` → `-dev.2` → `0.2.1`. Gestures can only be judged on a real phone, and Pages is the only way onto one, so prerelease tags deploy to Pages like any other — single environment, and getting the build in hand is the point. Only the GitHub Release differs: a tag containing `-` is created `--prerelease`, so *Latest release* keeps pointing at the last stable version.
+- `concurrency: { group: pages, cancel-in-progress: false }` on `release.yml` — two deploys must not interleave. `false` because a superseded deploy still has to finish cleanly rather than be killed mid-publish.
 
 ## Data flow
 press family → tier 2 fans out → release on note → `onAdd` appends to current brew → note leaves
@@ -69,14 +77,16 @@ drill, becomes a pill → `saveStore` effect → re-render.
 - `flavors.yaml` list order = order notes fan out within a family. Ring position is *not* file order — `ringOrder` computes it from note counts.
 - Editing `flavors.yaml` can orphan notes already logged in a brew. They still render, neutral fallback colour.
 - Export writes `<brew name> DD-MM-HH-MM.json`, not fixed `brews.json`. Debugging convenience: folder of dumps says which cup and when, two exports never overwrite. Name stripped to `\w`, space, `-`; falls back to `brews` if nothing left. Import ignores filename, validates contents.
-- Vite `base: './'` so built site works on GitHub Pages subpaths.
+- Vite `base: './'` so built site works on GitHub Pages subpaths. `dist/index.html` must reference `./assets/...`; absolute `/assets/...` 404s on a project-page subpath and only there.
+- **pnpm, pinned.** `packageManager: pnpm@11.3.0` in `package.json` is what `pnpm/action-setup` reads, so CI uses the laptop's pnpm instead of drifting to latest. CI installs with `--frozen-lockfile` — `pnpm-lock.yaml` is the only lockfile that counts.
+- Releasing = bump `version` in `package.json`, push to main. Nothing else by hand. No `git tag`, no `dist/` commit.
 
 ## Local dev
 ```
 conda env create -f environment.yml   # once (python + nodejs)
-conda run -n ajinokopi npm install    # once
-conda run -n ajinokopi npm run dev    # http://localhost:5173, --host exposes LAN for phone testing
-conda run -n ajinokopi npm test       # pure-function checks
-conda run -n ajinokopi npm run build  # dist/ for GitHub Pages
+pnpm install --frozen-lockfile        # once. Same flag CI uses, so a stale lock fails here first
+pnpm dev                              # http://localhost:5173, --host exposes LAN for phone testing
+pnpm test                             # pure-function checks
+pnpm build                            # dist/ for GitHub Pages
 ```
-(System node works the same: `npm run dev` etc.)
+pnpm, not npm — `npm install` would regenerate `package-lock.json` and desync from what CI installs.

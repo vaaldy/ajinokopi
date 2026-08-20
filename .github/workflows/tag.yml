@@ -1,0 +1,77 @@
+name: Tag release
+
+# Bumping "version" in package.json on main is the whole release ritual. This turns that bump into
+# a tag, then hands off to release.yml.
+#
+# Runs on EVERY push to main, not only pushes touching package.json. "Has this version been tagged
+# yet" is the only question that matters, and it answers itself from the tags. Filtering on the file
+# stranded the common case: red tests leave no tag, but the follow-up fix commit touches src/ only,
+# so the tagger never woke up again and the version sat unreleased in silence.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true # without tags the already-tagged check can never see one
+
+      - id: bump
+        run: |
+          set -euo pipefail
+          v=$(node -p "require('./package.json').version")
+          # Prerelease suffix allowed and meaningful: 0.2.1-dev.1 sorts below 0.2.1.
+          if ! echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::version '$v' is not semver"
+            exit 1
+          fi
+          # Already tagged is the normal state of most pushes, not an error. Retrying a failed
+          # release with the same version is therefore free: no tag was created, so this runs again.
+          if git rev-parse "v$v" >/dev/null 2>&1; then
+            echo "v$v already tagged - nothing to release. Bump version to cut a new one."
+            exit 0
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      # Test before tagging, not after. A tag is the permanent record of a release, so a red tree
+      # must never earn one.
+      - if: steps.bump.outputs.version != ''
+        uses: pnpm/action-setup@v4
+      - if: steps.bump.outputs.version != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.bump.outputs.version != ''
+        run: pnpm install --frozen-lockfile
+      - if: steps.bump.outputs.version != ''
+        run: pnpm test
+
+      - if: steps.bump.outputs.version != ''
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "v$V" -m "v$V"
+          git push origin "v$V"
+        env:
+          V: ${{ steps.bump.outputs.version }}
+
+  release:
+    needs: tag
+    if: needs.tag.outputs.version != ''
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    with:
+      tag: v${{ needs.tag.outputs.version }}

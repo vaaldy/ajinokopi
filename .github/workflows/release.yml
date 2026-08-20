@@ -1,0 +1,75 @@
+name: Release
+
+# Two entry points on purpose:
+#   workflow_call - tag.yml invokes this right after it pushes the tag, because a tag pushed with
+#                   the default GITHUB_TOKEN does not trigger another workflow.
+#   push: tags    - escape hatch, so a hand-pushed tag still deploys.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag to build and release. Omitted on the push-tag path.
+        type: string
+        required: false
+        default: ''
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Never let two deploys interleave.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # On the workflow_call path github.ref is main, not the tag, so check the tag out explicitly.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No artifact attached - the Pages deploy is the artifact.
+      # A tag carrying a prerelease suffix (v0.2.1-dev.1) is flagged as such, so the repo's
+      # "Latest release" keeps pointing at the last stable one.
+      - run: |
+          set -euo pipefail
+          case "$TAG" in
+            *-*) flag=--prerelease ;;
+            *)   flag= ;;
+          esac
+          gh release create "$TAG" --generate-notes --verify-tag $flag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}

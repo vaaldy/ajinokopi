@@ -28,19 +28,21 @@ Caveman applies to docs only. Code, code comments, commit messages, PR bodies st
 | Screen, state, brew management | `src/App.jsx` | |
 | Flavor data | `public/flavors.yaml` | User-editable. Family → `{color, notes[], noteColors?, groups?}`. |
 | Doc discipline, run before + after each release | `prompts/note-take.md` | Canonical `/note-take` skill. Owns `architecture.md` + `status.md`. Copy to `.claude/skills/note-take/SKILL.md` to make the command work — `.claude/` is gitignored. |
-| Tests | `test.js` | `npm test`. Pure functions in `src/lib.js` only. `.jsx` has no coverage. |
+| Tests | `test.js` | `pnpm test`. Pure functions in `src/lib.js` only. `.jsx` has no coverage. |
+| How to release / deploy, in human terms | `README.md` | Contributor-facing. Workflow table, walkthrough, gotchas. |
+| Release pipeline | `.github/workflows/` | `ci.yml` (main + PRs), `tag.yml` (version bump cuts tag), `release.yml` (build, Pages, GitHub Release). Design notes in `architecture.md` Blocks. |
 
 `dist/` and `node_modules/` gitignored. Never read them.
 
 ## Dev cycle
 
 Releases named by semver, never "phase N" — phase N shipped as v0.N. `package.json` `version`
-is source of truth; a bump on main cuts the release.
+is source of truth; a bump on main cuts the release — `tag.yml` tags it, `release.yml` deploys it. Never `git tag` by hand.
 
 ```
 /note-take                 # before: read docs, check drift, open version line
 <build>                    # ponytail rules
-npm test && npm run build  # must pass
+pnpm test && pnpm build    # must pass
 /note-take                 # after: architecture.md = reality, status.md = version state
 <user commits>             # git manual, agent never commits/tags/pushes
 ```
@@ -51,3 +53,4 @@ npm test && npm run build  # must pass
 - Perf lives in the render tree, not the maths. CSS `filter` on an ancestor welds its whole subtree
   into one raster unit — see `architecture.md` Blocks.
 - `git status` to read is fine. Changing git state is not.
+- pnpm only. `npm install` regenerates `package-lock.json` and desyncs from CI's `--frozen-lockfile`.
