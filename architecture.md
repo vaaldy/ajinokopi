@@ -12,6 +12,7 @@ src/lib.js            — ALL pure logic + storage (no React): geometry, colors,
                         pill orbit, fingerprint math, brew store
 src/styles.css        — whole stylesheet
 public/flavors.yaml   — flavor tree, user-editable (Family -> {color, notes[], noteColors?, groups?})
+pnpm-workspace.yaml   — pnpm settings. Not a monorepo: holds the install-script allowlist only
 test.js               — pure-function checks against src/lib.js (`pnpm test`, plain Node)
 .github/workflows/    — ci.yml, tag.yml, release.yml: whole release pipeline
 ```
@@ -79,6 +80,9 @@ drill, becomes a pill → `saveStore` effect → re-render.
 - Export writes `<brew name> DD-MM-HH-MM.json`, not fixed `brews.json`. Debugging convenience: folder of dumps says which cup and when, two exports never overwrite. Name stripped to `\w`, space, `-`; falls back to `brews` if nothing left. Import ignores filename, validates contents.
 - Vite `base: './'` so built site works on GitHub Pages subpaths. `dist/index.html` must reference `./assets/...`; absolute `/assets/...` 404s on a project-page subpath and only there.
 - **pnpm, pinned.** `packageManager: pnpm@11.3.0` in `package.json` is what `pnpm/action-setup` reads, so CI uses the laptop's pnpm instead of drifting to latest. CI installs with `--frozen-lockfile` — `pnpm-lock.yaml` is the only lockfile that counts.
+- **Dependency install scripts are blocked unless named in `pnpm-workspace.yaml` `allowBuilds`.** pnpm 11 refuses to run any dependency `postinstall` by default and *errors* rather than warns, because an install script is arbitrary code executing with whatever credentials the shell has. `esbuild` needs its own: it is a compiled Go binary, and the script places the build matching the platform (`@esbuild/linux-x64` on the runner). Blocked means vite has nothing to transform JSX with.
+- This bites again for any future dependency shipping a native binary, and only in CI — a laptop with a warm `node_modules` reports `Already up to date` and runs no scripts, so the failure appears exclusively on a fresh install. `pnpm approve-builds <pkg>` writes the entry.
+- The setting lives in `pnpm-workspace.yaml` because pnpm 10+ made that its general settings file, monorepo or not. `package.json`'s `pnpm.onlyBuiltDependencies` and `.npmrc`'s `allow-builds[]` are both silently ignored by 11.3.0 — verified, and most advice online still names the old key.
 - Releasing = bump `version` in `package.json`, push to main. Nothing else by hand. No `git tag`, no `dist/` commit.
 
 ## Local dev
