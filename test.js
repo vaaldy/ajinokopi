@@ -6,6 +6,7 @@ import {
   ringOrder, radialGroups, noteFan, wheelGeom, viewBoxFor, hitWheel,
   layoutPills, layoutWheel, dragPillAngle, fingerprintTones, mixWeightFor,
   uuid, validateBrews, newBrewDoc, fillBrew, mergeBrews, defaultScores, noteColorOf, UNKNOWN_COLOR,
+  toRgb, mixColors,
 } from './src/lib.js';
 
 const results = [];
@@ -146,6 +147,14 @@ const after = fingerprintTones({ notes: fpNotes, mix: pulled, colorOf, ringSegs:
 t('mix: dragging a handle outward shrinks that tone and grows the rest',
   after.tones.find(x => x.note === 'f').p < fp.tones.find(x => x.note === 'f').p);
 t('mix: shares still sum to 1 after a drag', Math.abs(after.tones.reduce((a, x) => a + x.p, 0) - 1) < 1e-9);
+
+// ---------- colour blending ----------
+t('mixColors: full weight returns the colour itself', mixColors(['#ff0000', '#0000ff'], [1, 0]) === '#ff0000');
+t('mixColors: equal red+blue lands brighter than gamma-space average (linear-light)',
+  parseInt(mixColors(['#ff0000', '#0000ff'], [1, 1]).slice(1, 3), 16) > 0x80);
+t('mixColors: reads hsl() strings from shades()', /^#[0-9a-f]{6}$/.test(mixColors(shades('#c85a54', 3), [1, 2, 1])));
+t('toRgb: hsl round-trip stays close', toRgb('hsl(0 100% 50%)').join(',') === '255,0,0');
+t('fingerprint: baseCol is the blend, shifts when mix shifts', fp.baseCol !== after.baseCol);
 
 // ---------- brew store ----------
 t('uuid: string of hex', /^[0-9a-f-]{32,36}$/.test(uuid()));

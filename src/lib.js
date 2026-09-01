@@ -79,6 +79,27 @@ export function shades(hex, n) {
   });
 }
 
+// Parse either colour format the app produces (#hex from flavors.yaml, hsl() from shades()).
+export function toRgb(col) {
+  if (col[0] === '#') return [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16));
+  const [h, s, l] = col.match(/-?[\d.]+/g).map(Number);
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+  };
+  return [f(0), f(8), f(4)];
+}
+
+// Weighted mix in linear-light sRGB — averaging gamma-encoded channels darkens the result.
+export function mixColors(cols, weights) {
+  const lin = c => Math.pow(c / 255, 2.2), gam = c => Math.round(255 * Math.pow(c, 1 / 2.2));
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+  const acc = [0, 0, 0];
+  cols.forEach((col, i) => toRgb(col).forEach((c, j) => { acc[j] += lin(c) * weights[i] / sum; }));
+  return '#' + acc.map(c => gam(c).toString(16).padStart(2, '0')).join('');
+}
+
 // Dark ink on light fills, light ink on dark ones — the palette is pastel, so most
 // sectors want the dark one.
 export function ink(col) {
@@ -383,11 +404,12 @@ export function fingerprintTones({ notes, mix = {}, colorOf, ringSegs, pills = [
   const top = Object.entries(w).sort((a, b) => b[1].n - a[1].n).slice(-nTones);
   const N = top.length;
   const colOf = ([note, v]) => colorOf(v.cat, note);
-  // Base coat under the arcs, so overlapping tones can never leave a void.
-  const baseCol = N ? colOf(top[N - 1]) : '#221d1b';
   // Relational mix: raw weights are normalised, so pulling one tone back pushes the rest up.
   const raws = top.map((t, i) => Math.max(0.02, mix[t[0]] == null ? t[1].n : mix[t[0]]));
   const rawSum = raws.reduce((a, b) => a + b, 0) || 1;
+  // Base coat = the cup's true blend: every tone's colour mixed by share, so dragging a
+  // handle shifts the whole disc toward that note, not just its own gradient.
+  const baseCol = N ? mixColors(top.map(colOf), raws) : '#221d1b';
   const tones = top.map((t, i) => {
     const p = raws[i] / rawSum;                            // this tone's share of the cup
     const u = Math.max(0.03, Math.min(1, fpCurve(p)));
@@ -402,7 +424,9 @@ export function fingerprintTones({ notes, mix = {}, colorOf, ringSegs, pills = [
     // the handle track stops short of the pill rim (rim inner edge is r-9; keep 6 handle + 2 clear)
     const hMax = Math.max(0.15, (r - 9 - 6 - 2) / r);
     const [hx, hy] = polar(cx, cy, r * Math.min(hMax, 0.1 + 0.68 * (1 - u)), bearing);
-    return { note: t[0], col: colOf(t), bearing, s: u, p, d, R, bx, by, hx, hy };
+    // Tones pre-mixed toward the cup blend so overlapping gradients read as regions of one
+    // liquid instead of contrasting stickers (seams between unrelated hues go muddy).
+    return { note: t[0], col: mixColors([colOf(t), baseCol], [0.82, 0.18]), bearing, s: u, p, d, R, bx, by, hx, hy };
   });
   return { tones, baseCol };
 }

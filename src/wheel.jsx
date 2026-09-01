@@ -42,30 +42,26 @@ function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
           <stop offset="100%" stopColor={baseCol} stopOpacity="0.72" />
         </radialGradient>
         {tones.map(l => (
+          // Eased, near-gaussian ramp: the steep old tail (0.72 -> 0 over the last 45%)
+          // drew a visible rim inside the disc.
           <radialGradient key={l.note} id={gid(l.note)} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={l.col} stopOpacity="0.98" />
-            <stop offset="55%" stopColor={l.col} stopOpacity="0.72" />
+            <stop offset="35%" stopColor={l.col} stopOpacity="0.7" />
+            <stop offset="65%" stopColor={l.col} stopOpacity="0.35" />
+            <stop offset="85%" stopColor={l.col} stopOpacity="0.1" />
             <stop offset="100%" stopColor={l.col} stopOpacity="0" />
           </radialGradient>
         ))}
-        <radialGradient id={gid('hi')} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-        </radialGradient>
       </defs>
       <g clipPath="url(#fpclip)">
         <circle cx={cx} cy={cy} r={r * 1.6} fill={`url(#${gid('base')})`}
                 style={{ transition: 'fill 1.1s cubic-bezier(.2,.8,.2,1)' }} />
         {tones.length > 1 && tones.map((l, i) => (
-          <g key={l.note}>
-            <circle cx={l.bx} cy={l.by} r={l.R * 1.35} fill={`url(#${gid(l.note)})`} style={glide}>
-              {drift(i, r * 0.05)}
-            </circle>
-            <circle cx={l.bx + r * 0.1} cy={l.by - r * 0.12} r={l.R * 0.55} fill={`url(#${gid('hi')})`}
-                    style={{ ...glide, mixBlendMode: 'screen' }}>
-              {drift(i + 1, r * 0.05)}
-            </circle>
-          </g>
+          // Oversized so the gradient's zero-edge lands outside the clipped disc (Zen-browser
+          // trick): only the smooth interior falloff is ever visible, never the circle's rim.
+          <circle key={l.note} cx={l.bx} cy={l.by} r={l.R * 2.4} fill={`url(#${gid(l.note)})`} style={glide}>
+            {drift(i, r * 0.05)}
+          </circle>
         ))}
       </g>
       <circle cx={cx} cy={cy} r={r} filter="url(#fpgrain)"
