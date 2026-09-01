@@ -6,7 +6,9 @@ v0.1 = tap-drill flavor wheel, YAML flavor tree, localStorage brew store (Mongo-
 v0.2 = press-drag-release drill, orbiting note pills, live fingerprint hub, SCA cupping sheet, brew-named export files (done)
 v0.3 = release CI/CD: version-bump auto-tagging, Pages deploy, GitHub Releases (done — v0.3.0-dev.1 tagged, published as prerelease, live at `https://vaaldy.github.io/ajinokopi/`)
 
-v0.3.1 = brew fields origin, process, varietal, brew method; brew date under the name (in progress)
+v0.3.1 = brew fields process, origin, varietal, brew method; brew date under the name; cupping sheet
+restyled as a code block — braced rows, note-coloured highlights, scores as a nested block of mono bars
+(in progress — dev.2 on the phone next)
 
 ## Open
 

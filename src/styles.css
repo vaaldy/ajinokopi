@@ -53,30 +53,78 @@ input.title {
 }
 
 /* ---------- the cupping sheet ---------- */
-.sheet { border-top: 1px solid #2b2522; margin-top: 8px; }
+.sheet { margin-top: 8px; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 14px 0; }
 .pair label {
   display: flex; flex-direction: column; gap: 4px; min-width: 0;
   font: 400 13px 'Source Serif 4', Georgia, serif; color: #8d8177;
 }
-.pair input, .remark textarea {
+.remark textarea {
   width: 100%; color: #e7e0d8; background: #241f1d;
   border: 1px solid #3a322d; border-radius: 6px; outline: none;
 }
+.remark textarea:focus { border-color: #6b5c50; }
+/* No box round the values — the label above them is enough to say what they are. The bottom
+   border is always there and usually transparent: it carries focus without shifting layout. */
+.pair input, .trio {
+  width: 100%; color: #e7e0d8; background: none; outline: none;
+  border: 0; border-bottom: 1px solid transparent;
+}
 .pair input {
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
-  padding: 7px 8px; text-transform: none; letter-spacing: 0;
+  padding: 3px 0 4px; text-transform: none; letter-spacing: 0;
 }
-.pair input:focus, .remark textarea:focus { border-color: #6b5c50; }
+.pair input:focus, .trio:focus-within { border-bottom-color: #6b5c50; }
+/* Label sits on the same line as its value, left column matching the slider names below. */
+.pair.one { grid-template-columns: 1fr; }
+.pair.one label { flex-direction: row; align-items: baseline; gap: 6px; }
+.pair.one .trio { flex: 1 1 0; min-width: 0; width: auto; }
 
-.sliders { display: flex; flex-direction: column; gap: 9px; padding: 12px 14px 4px; }
-.slider { display: flex; align-items: center; gap: 10px; }
-.slider .name { width: 78px; flex: none; font: 600 14px 'JetBrains Mono', ui-monospace, monospace; color: #a89c92; }
-.slider input[type=range] { flex: 1; min-width: 0; accent-color: #d9a066; height: 18px; }
-.slider .val {
-  width: 30px; flex: none; text-align: right;
-  font: 600 14px 'JetBrains Mono', ui-monospace, monospace; color: #e7e0d8;
+/* Homage to a code block: braces as plain glyphs, so the closing one follows the last word
+   wherever it lands rather than towering beside it. Inline flow rather than flex, because a
+   hanging indent is what makes a wrapped row line up under the first word instead of under the
+   brace — `padding-left` indents every row, negative `text-indent` pulls the first one back out.
+   16px, not smaller: iOS zooms the page on focus for anything under it. Mono, so `1ch` spacing
+   is exactly one space and the three fields read as words rather than as columns. */
+.trio {
+  padding: 3px 0 4px 2ch; text-indent: -2ch; line-height: 1.55;
+  font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
 }
+.trio::before, .trio::after { content: '{'; color: #574d46; }
+.trio::before { margin-right: 1ch; }
+.trio::after { content: '}'; margin-left: 1ch; }
+
+/* A value is highlighted in one of the cup's own note colours (set inline by <App>), so the line
+   is tinted by what was actually tasted. Padding is in the width calc, not stolen from the text. */
+.trio input {
+  display: inline-block; vertical-align: baseline; max-width: 100%;
+  background: none; border: 0; padding: 1px 3px; border-radius: 0;
+  color: inherit; outline: none; font: inherit; text-indent: 0;
+}
+.trio input::placeholder { color: #574d46; }
+.trio .sep { color: #574d46; }
+
+/* One left column for the whole sheet: every label is the same thing. */
+.pair.one .name {
+  width: 62px; flex: none;
+  font: 600 14px 'JetBrains Mono', ui-monospace, monospace; color: #a89c92;
+}
+
+/* The scores are a nested block, so their brace opens a line of its own and the keys indent under
+   it. Ten mono cells are a ruler: every bar lines up column-for-column with no measuring. */
+.scores { text-indent: 0; padding-left: 0; }
+.scores::after { margin-left: 0; }  /* closing brace sits at column 0, not a space in */
+.scores .score { display: grid; grid-template-columns: 10ch 10ch auto; gap: 1ch; padding-left: 2ch; }
+.scores .key { color: #a89c92; }
+.scores .bar { position: relative; white-space: pre; color: #d9a066; }
+.scores .rest { color: #3a322d; }
+/* The native range does the interaction, invisibly, over the glyphs that do the looking: touch
+   target, keyboard and screen reader all stay native for the price of one rule. */
+.scores .bar input[type=range] {
+  position: absolute; inset: -5px 0; width: 100%; height: calc(100% + 10px);
+  margin: 0; opacity: 0; cursor: pointer;
+}
+.scores .val { color: #e7e0d8; }
 
 .remark { padding: 6px 14px 14px; }
 .remark textarea {

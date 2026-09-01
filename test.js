@@ -31,6 +31,8 @@ t('shades: n colors for n notes', shades('#aabbcc', 5).length === 5);
 t('shades: single note no div-by-zero', !shades('#aabbcc', 1)[0].includes('NaN'));
 t('hexToHsl: red hue', hexToHsl('#ff0000').h === 0 && hexToHsl('#ff0000').s === 100);
 t('ink: dark on pale fills, light on dark ones', ink('#f7d7a2') === '#3a2f28' && ink('#3a2f28') === '#fff');
+t('ink: reads an hsl() shade too, not just hex',
+  ink('hsl(30 40% 78%)') === '#3a2f28' && ink('hsl(30 40% 22%)') === '#fff');
 const citrus = { color: '#f7d7a2', notes: ['lemon', 'lime'], noteColors: { lemon: '#f7e79a' } };
 t('colorMapper: authored note colour wins', colorMapper.note('Citrus', citrus, 0, 2) === '#f7e79a');
 t('colorMapper: unauthored note falls back to a shade', colorMapper.note('Citrus', citrus, 1, 2).startsWith('hsl('));

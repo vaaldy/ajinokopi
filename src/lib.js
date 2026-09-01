@@ -81,9 +81,15 @@ export function shades(hex, n) {
 
 // Dark ink on light fills, light ink on dark ones — the palette is pastel, so most
 // sectors want the dark one.
-export function ink(hex) {
-  if (!hex || hex[0] !== '#') return '#fff';
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+export function ink(col) {
+  if (typeof col !== 'string') return '#fff';
+  // shades() hands back hsl() strings, so lightness is already the answer for those
+  if (col.startsWith('hsl')) {
+    const m = col.match(/-?[\d.]+/g);
+    return m && +m[2] > 60 ? '#3a2f28' : '#fff';
+  }
+  if (col[0] !== '#') return '#fff';
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16));
   return (r * 0.299 + g * 0.587 + b * 0.114) > 150 ? '#3a2f28' : '#fff';
 }
 
