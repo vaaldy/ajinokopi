@@ -65,12 +65,18 @@ export default function App() {
   return (
     <>
       <header>
-        {editing
-          ? <input className="title" value={cur.name} autoFocus
-                   onChange={e => setField('name', e.target.value)}
-                   onKeyDown={e => { if (e.key === 'Enter') setEditing(false); }}
-                   onBlur={() => setEditing(false)} />
-          : <span className="title">{cur.name}</span>}
+        <div className="who">
+          {editing
+            ? <input className="title" value={cur.name} autoFocus
+                     onChange={e => setField('name', e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') setEditing(false); }}
+                     onBlur={() => setEditing(false)} />
+            : <span className="title">{cur.name}</span>}
+          <span className="date">
+            {new Date(cur.createdAt).toLocaleDateString(undefined,
+              { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        </div>
         <button className="icon" title="Rename" onClick={() => setEditing(t => !t)}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,7 +95,15 @@ export default function App() {
           <label>Origin
             <input value={cur.origin} placeholder="Nyeri, KE" onChange={e => setField('origin', e.target.value)} />
           </label>
-          <label>Method
+          <label>Process
+            <input value={cur.process} placeholder="Washed" onChange={e => setField('process', e.target.value)} />
+          </label>
+        </div>
+        <div className="pair">
+          <label>Varietal
+            <input value={cur.varietal} placeholder="SL28" onChange={e => setField('varietal', e.target.value)} />
+          </label>
+          <label>Brew method
             <input value={cur.brewMethod} placeholder="V60 · 1:16" onChange={e => setField('brewMethod', e.target.value)} />
           </label>
         </div>

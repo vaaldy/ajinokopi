@@ -149,13 +149,16 @@ t('mix: shares still sum to 1 after a drag', Math.abs(after.tones.reduce((a, x) 
 t('uuid: string of hex', /^[0-9a-f-]{32,36}$/.test(uuid()));
 const doc = newBrewDoc('test');
 t('newBrewDoc is Mongo-shaped', typeof doc._id === 'string' && !isNaN(Date.parse(doc.createdAt)));
-t('newBrewDoc carries the cupping fields', doc.origin === '' && doc.remark === '' && doc.scores.Acidity === defaultScores().Acidity);
+t('newBrewDoc carries the cupping fields', doc.origin === '' && doc.process === '' && doc.varietal === '' &&
+  doc.brewMethod === '' && doc.remark === '' && doc.scores.Acidity === defaultScores().Acidity);
 t('validateBrews: accepts good doc', validateBrews([doc]));
 t('validateBrews: rejects bad doc', !validateBrews([{ name: 1 }]));
 t('validateBrews: rejects non-array', !validateBrews({}));
 t('export/import round-trip', JSON.stringify(JSON.parse(JSON.stringify([doc]))) === JSON.stringify([doc]));
 const old = { _id: 'x', name: 'phase 1 brew', notes: [] };
 t('fillBrew: a pre-v0.2 doc gains the cupping fields', validateBrews([fillBrew(old)]) && fillBrew(old).scores.Intensity === 5);
+t('fillBrew: a doc without a date gets one, a doc with one keeps it',
+  !isNaN(Date.parse(fillBrew(old).createdAt)) && fillBrew({ ...old, createdAt: 'x' }).createdAt === 'x');
 t('fillBrew: never clobbers a stored score', fillBrew({ ...old, scores: { Acidity: 9 } }).scores.Acidity === 9);
 t('fillBrew: coerces a score that came back from JSON as a string', fillBrew({ ...old, scores: { Acidity: '9' } }).scores.Acidity === 9);
 t('fillBrew: drops a junk score rather than rendering NaN', fillBrew({ ...old, scores: { Acidity: null } }).scores.Acidity === 7);

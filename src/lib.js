@@ -433,7 +433,8 @@ export function validateBrews(a) {
 
 export function newBrewDoc(name) {
   return {
-    _id: uuid(), name, origin: '', brewMethod: '', createdAt: new Date().toISOString(),
+    _id: uuid(), name, origin: '', process: '', varietal: '', brewMethod: '',
+    createdAt: new Date().toISOString(),
     scores: defaultScores(), remark: '', notes: [],
   };
 }
@@ -447,7 +448,10 @@ export function fillBrew(b) {
     const n = typeof v === 'string' ? parseFloat(v) : v;
     if (typeof n === 'number' && Number.isFinite(n)) scores[k] = n;
   });
-  return { origin: '', brewMethod: '', remark: '', ...b, scores };
+  return {
+    origin: '', process: '', varietal: '', brewMethod: '', remark: '',
+    createdAt: new Date().toISOString(), ...b, scores,
+  };
 }
 
 // Merge by _id, imported wins — never silently drops existing brews.
