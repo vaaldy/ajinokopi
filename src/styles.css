@@ -1,35 +1,67 @@
 * { margin: 0; box-sizing: border-box; }
-html, body { height: 100%; }
+/* any one element poking past the viewport makes iOS shrink the whole page to fit it, so the app
+   reads ~80% wide with a dead strip on the right. Clip on both roots — body alone is not enough
+   for Safari's initial-scale computation. */
+html, body { height: 100%; overflow-x: clip; }
 body {
   font-family: system-ui, sans-serif;
   background: #1c1917; color: #e7e0d8;
   -webkit-user-select: none; user-select: none;
 }
+/* Plain stack of full-width strips: topbar, actions, wheel, notes. Nothing clever — every strip
+   is a block that owns its own background and padding. Bottom padding clears Safari's floating
+   bar, whose height is not in env(safe-area-inset-bottom). */
 #root {
   display: flex; flex-direction: column; min-height: 100dvh;
-  max-width: 430px; margin: 0 auto;
-  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom, 0px) + 56px);
 }
 
-/* ---------- header: the cup's name ---------- */
-header { display: flex; align-items: center; gap: 8px; padding: 12px 14px 2px; }
-.who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.date { font: 400 12px 'JetBrains Mono', ui-monospace, monospace; color: #8d8177; }
-.title {
-  min-width: 0;
-  font: 600 20px/1.25 'Source Serif 4', Georgia, serif;
-  color: #f0e9e2; letter-spacing: -0.01em;
+/* ---------- topbar ---------- */
+/* One row that gets taller, never a second row: the name cell wraps internally, every other cell
+   stretches with the bar, the caret stays top right. */
+.pane {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: stretch; gap: 0 1ch; padding: 5px 14px;
+  background: #241f1d; color: #e7e0d8;
+  /* 16px, not 14: the name is editable, and iOS zooms the page on focusing editable text under
+     16px — that zoom is what made the width look like it "fixed itself" after a keystroke */
+  font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
 }
-input.title {
-  background: #2b2522; border: 1px solid #6b5c50; border-radius: 6px;
-  padding: 5px 8px; outline: none;
+.typing { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.handle { outline: none; }
+.picker { align-self: flex-start; }
+.app { background: #d9a066; color: #1c1917; padding: 1px 1ch; }
+
+/* ---------- actions strip ---------- */
+.actions {
+  display: flex; gap: 8px; padding: 8px 14px;
+  font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
 }
-.icon {
-  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
-  background: transparent; color: #9d9088;
-  border: 1px solid #4a4038; border-radius: 6px;
+.act {
+  background: #d9a066; color: #1c1917; padding: 3px 1ch;
+  border: 0; font: inherit;
 }
-.icon:active { color: #e7e0d8; border-color: #6b5c50; }
+.act:active { background: #f0e9e2; }
+
+/* The picker is a real <select> laid transparent over its caret: native list on a phone, and the
+   touch target is the padded box around the glyph rather than the glyph itself. */
+.picker { position: relative; color: #8d8177; }
+/* the touch target grows left and down only: the picker is the row's last item, and anything
+   past its right edge pokes out of the viewport and triggers the shrink-to-fit above */
+.picker select {
+  position: absolute; inset: -6px 0 -6px -10px; width: calc(100% + 10px); height: calc(100% + 12px);
+  opacity: 0; appearance: none; -webkit-appearance: none; border: 0; margin: 0; padding: 0;
+}
+
+
+/* Terminal block cursor: solid, full line height, blinking on the step. Gone while the field has
+   focus, so the browser's own caret is never doubled up. */
+.cursor {
+  display: inline-block; width: 1ch; height: 1.15em; vertical-align: -0.22em;
+  margin-left: -3px; background: #f0e9e2; animation: blink 1.1s step-end infinite;
+}
+.typing:focus-within .cursor { display: none; }
+@keyframes blink { 50% { background: transparent; } }
 
 /* ---------- the wheel ---------- */
 .wheel {
@@ -52,97 +84,56 @@ input.title {
   100% { opacity: 1; transform: scale(1); }
 }
 
-/* ---------- the cupping sheet ---------- */
-.sheet { margin-top: 8px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 14px 0; }
-.pair label {
-  display: flex; flex-direction: column; gap: 4px; min-width: 0;
-  font: 400 13px 'Source Serif 4', Georgia, serif; color: #8d8177;
+/* ---------- the cupping sheet, typeset as source ---------- */
+/* The sheet is one function: coffee in the signature, everything measured in the body. Punctuation
+   is decoration, nothing is parsed. 16px, not smaller: iOS zooms the page on focus under that. */
+.sheet {
+  margin-top: 8px; padding: 10px 14px 14px;
+  font: 600 16px 'JetBrains Mono', ui-monospace, monospace; line-height: 1.6;
 }
-.remark textarea {
-  width: 100%; color: #e7e0d8; background: #241f1d;
-  border: 1px solid #3a322d; border-radius: 6px; outline: none;
-}
-.remark textarea:focus { border-color: #6b5c50; }
-/* No box round the values — the label above them is enough to say what they are. The bottom
-   border is always there and usually transparent: it carries focus without shifting layout. */
-.pair input, .trio {
-  width: 100%; color: #e7e0d8; background: none; outline: none;
-  border: 0; border-bottom: 1px solid transparent;
-}
-.pair input {
-  font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
-  padding: 3px 0 4px; text-transform: none; letter-spacing: 0;
-}
-.pair input:focus, .trio:focus-within { border-bottom-color: #6b5c50; }
-/* Label sits on the same line as its value, left column matching the slider names below. */
-.pair.one { grid-template-columns: 1fr; }
-.pair.one label { flex-direction: row; align-items: baseline; gap: 6px; }
-.pair.one .trio { flex: 1 1 0; min-width: 0; width: auto; }
+.kw { color: #d9a066; }
+.punc { color: #574d46; }        /* commas, semicolons — structure, not content */
+.brace { color: #f0e9e2; }       /* braces carry the shape of the block, so they read at full weight */
 
-/* Homage to a code block: braces as plain glyphs, so the closing one follows the last word
-   wherever it lands rather than towering beside it. Inline flow rather than flex, because a
-   hanging indent is what makes a wrapped row line up under the first word instead of under the
-   brace — `padding-left` indents every row, negative `text-indent` pulls the first one back out.
-   16px, not smaller: iOS zooms the page on focus for anything under it. Mono, so `1ch` spacing
-   is exactly one space and the three fields read as words rather than as columns. */
-.trio {
-  padding: 3px 0 4px 2ch; text-indent: -2ch; line-height: 1.55;
-  font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
-}
-.trio::before, .trio::after { content: '{'; color: #574d46; }
-.trio::before { margin-right: 1ch; }
-.trio::after { content: '}'; margin-left: 1ch; }
+.arg { white-space: nowrap; }
 
-/* A value is highlighted in one of the cup's own note colours (set inline by <App>), so the line
-   is tinted by what was actually tasted. Padding is in the width calc, not stolen from the text. */
-.trio input {
-  display: inline-block; vertical-align: baseline; max-width: 100%;
-  background: none; border: 0; padding: 1px 3px; border-radius: 0;
-  color: inherit; outline: none; font: inherit; text-indent: 0;
-}
-.trio input::placeholder { color: #574d46; }
-.trio .sep { color: #574d46; }
+/* Wrapped arguments fall back to the body's own indent rather than lining up under the first one:
+   a 12ch hanging indent is 12 characters of a 40-character phone row spent on alignment. */
+.sig { padding-left: 2ch; text-indent: -2ch; }
+.body { padding-left: 2ch; }
 
-/* One left column for the whole sheet: every label is the same thing. */
-.pair.one .name {
-  width: 62px; flex: none;
-  font: 600 14px 'JetBrains Mono', ui-monospace, monospace; color: #a89c92;
+/* Values are typeset, not boxed: each one is exactly as wide as what it holds (mono makes a
+   character count a width) and wears one of the cup's own note colours once it has something to
+   show. The bottom border is always there and usually transparent, so focus costs no layout. */
+.field {
+  display: inline-block; vertical-align: baseline; max-width: 100%; text-indent: 0;
+  background: none; border: 0; border-bottom: 1px solid transparent; border-radius: 0;
+  padding: 1px 3px; color: #f0e9e2; outline: none; font: inherit;
 }
+.field:focus { border-bottom-color: #6b5c50; }
+.field::placeholder { color: #574d46; }
 
-/* The scores are a nested block, so their brace opens a line of its own and the keys indent under
-   it. Ten mono cells are a ruler: every bar lines up column-for-column with no measuring. */
-.scores { text-indent: 0; padding-left: 0; }
-.scores::after { margin-left: 0; }  /* closing brace sits at column 0, not a space in */
-.scores .score { display: grid; grid-template-columns: 10ch 10ch auto; gap: 1ch; padding-left: 2ch; }
-.scores .key { color: #a89c92; }
-.scores .bar { position: relative; white-space: pre; color: #d9a066; }
-.scores .rest { color: #3a322d; }
+/* Ten mono cells are a ruler: every bar lines up column-for-column with nothing measured. */
+.score { display: grid; grid-template-columns: 10ch 10ch auto; gap: 1ch; padding-left: 2ch; }
+.score .key { color: #a89c92; }
+.score .bar { position: relative; white-space: pre; }
+.score .rest { color: #3a322d; }
 /* The native range does the interaction, invisibly, over the glyphs that do the looking: touch
    target, keyboard and screen reader all stay native for the price of one rule. */
-.scores .bar input[type=range] {
+.score .bar input[type=range] {
   position: absolute; inset: -5px 0; width: 100%; height: calc(100% + 10px);
   margin: 0; opacity: 0; cursor: pointer;
 }
-.scores .val { color: #e7e0d8; }
+.score .val { color: #e7e0d8; }
 
-.remark { padding: 6px 14px 14px; }
+/* The `//` down the gutter is a repeating background, not text: the stored remark stays plain
+   prose, so a copy or an export never carries syntax it did not ask for. Background tile height
+   must track line-height exactly or the slashes drift down the block. */
+.remark { margin-top: 6px; }
 .remark textarea {
-  resize: vertical; padding: 8px;
-  font: 400 13.5px/1.6 'Source Serif 4', Georgia, serif;
+  width: 100%; resize: vertical; padding: 0 0 0 3ch; color: #8d8177;
+  background: none; border: 0; outline: none;
+  font: 400 15px/23px 'JetBrains Mono', ui-monospace, monospace;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='23'%3E%3Ctext x='0' y='17' font-family='monospace' font-size='15' fill='%23574d46'%3E//%3C/text%3E%3C/svg%3E") repeat-y left top;
 }
-
-/* ---------- brew management (kept from phase 1: switch, copy, export/import) ---------- */
-footer {
-  margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 8px 14px; border-top: 1px solid #2b2522;
-}
-footer select {
-  flex: 1 1 100%; min-width: 0; font-size: 16px; padding: 8px;
-  background: #241f1d; color: inherit; border: 1px solid #3a322d; border-radius: 8px;
-}
-footer button {
-  flex: 1; font-size: 15px; padding: 8px 10px; min-height: 44px;
-  background: #2b2522; color: inherit; border: 1px solid #4a4038; border-radius: 8px;
-}
-footer button:active { background: #4a4038; }
+.remark textarea::placeholder { color: #4a4038; }
