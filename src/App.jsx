@@ -56,6 +56,11 @@ export default function App() {
     fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
   }, []);
   useEffect(() => saveStore(store), [store]);
+  useEffect(() => {
+    const esc = e => { if (e.key === 'Escape') setMenu(null); };
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, []);
 
   if (!flavors) return null;
 
@@ -271,7 +276,16 @@ export default function App() {
           {/* remarks are the comments. The `//` down the gutter is a repeating background, not
               text — the stored remark stays clean prose, so an export never carries syntax. */}
           <div className="remark">
-            <textarea rows="2" value={cur.remark} onChange={e => setField('remark', e.target.value)}
+            {/* auto-grows to content: height reset then set to scrollHeight on every change,
+                keyed by brew so switching cups re-measures. The // gutter is a repeat-y
+                background, so each new line picks up its slashes for free. */}
+            <textarea rows="2" key={cur._id} value={cur.remark}
+                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                      onChange={e => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                        setField('remark', e.target.value);
+                      }}
                       placeholder="texture, finish, how it changed as it cooled" />
           </div>
         </div>

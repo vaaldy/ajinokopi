@@ -71,7 +71,11 @@ body {
 
 /* ---------- the wheel ---------- */
 .wheel {
-  display: block; width: 100%; touch-action: none; cursor: crosshair;
+  /* Fit the whole stack in one portrait viewport: cap the wheel at what the height leaves
+     over (560 ~= topbar + sheet + margins). The 393px floor keeps phones full-width — their
+     height can never satisfy the cap, and full-width is the phone UX. */
+  display: block; width: min(100%, max(393px, 100dvh - 560px)); margin-inline: auto;
+  touch-action: none; cursor: crosshair;
   -webkit-user-select: none; user-select: none;
   font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
@@ -146,9 +150,37 @@ body {
    must track line-height exactly or the slashes drift down the block. */
 .remark { margin-top: 6px; }
 .remark textarea {
-  width: 100%; resize: vertical; padding: 0 0 0 3ch; color: #8d8177;
+  /* resize: none — height follows content automatically now, the drag handle fought it */
+  width: 100%; resize: none; overflow: hidden; padding: 0 0 0 3ch; color: #8d8177;
   background: none; border: 0; outline: none;
   font: 400 15px/23px 'JetBrains Mono', ui-monospace, monospace;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='23'%3E%3Ctext x='0' y='17' font-family='monospace' font-size='15' fill='%23574d46'%3E//%3C/text%3E%3C/svg%3E") repeat-y left top;
 }
 .remark textarea::placeholder { color: #4a4038; }
+
+/* ---------- wide / landscape layout ---------- */
+/* Sheet moves to the wheel's right when the viewport is wider than tall and both fit.
+   Wheel holds its iPhone-15-Pro portrait size (393px) and may shrink to 320px — below that
+   the tier-1 band drops under the 44px touch minimum. Height also caps the wheel (landscape
+   phone: 852x393), topbar takes ~60px. Must stay LAST in this file: it overrides the base
+   .wheel/.sheet rules by cascade order, not specificity. */
+@media (min-aspect-ratio: 1/1) and (min-width: 700px) {
+  /* Grid, not flex-wrap: the content row takes all leftover height (1fr), so the wheel can
+     centre in it and the sheet can sink to the bottom — flex lines can't do per-item vertical
+     placement without a wrapper div. */
+  #root {
+    display: grid;
+    grid-template-columns: auto minmax(340px, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+  .pane { grid-column: 1 / -1; }
+  /* Wheel scales with the viewport instead of freezing at phone size — a 393px wheel on a
+     2000px window read miniature and left the bottom half of the screen dead. 50vw keeps the
+     sheet's share; the dvh term still rules short windows (landscape phone: 333px). */
+  .wheel {
+    width: clamp(320px, min(50vw, 100dvh - 120px), 800px);
+    align-self: center;
+  }
+  /* full-height terminal pane, prompt at top — like a real shell session */
+  .sheet { align-self: stretch; margin-bottom: 12px; }
+}
