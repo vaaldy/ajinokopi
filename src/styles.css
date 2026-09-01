@@ -8,9 +8,9 @@ body {
   background: #1c1917; color: #e7e0d8;
   -webkit-user-select: none; user-select: none;
 }
-/* Plain stack of full-width strips: topbar, actions, wheel, notes. Nothing clever — every strip
-   is a block that owns its own background and padding. Bottom padding clears Safari's floating
-   bar, whose height is not in env(safe-area-inset-bottom). */
+/* Plain stack of full-width strips: topbar, wheel, notes. Nothing clever — every strip is a
+   block that owns its own background and padding. Bottom padding clears Safari's floating bar,
+   whose height is not in env(safe-area-inset-bottom). */
 #root {
   display: flex; flex-direction: column; min-height: 100dvh;
   padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom, 0px) + 56px);
@@ -31,27 +31,31 @@ body {
 .handle { outline: none; }
 .picker { align-self: flex-start; }
 .app { background: #d9a066; color: #1c1917; padding: 1px 1ch; }
+/* the session block as a button: reset chrome, invert brighter while its menu is open */
+.act { border: 0; font: inherit; padding: 1px 1ch; }
+.act:active, .act[aria-expanded="true"] { background: #f0e9e2; }
 
-/* ---------- actions strip ---------- */
-.actions {
-  display: flex; gap: 8px; padding: 8px 14px;
-  font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
+.picker {
+  background: none; border: 0; color: #8d8177; font: inherit;
+  padding: 0 4px; margin: 0;
 }
-.act {
-  background: #d9a066; color: #1c1917; padding: 3px 1ch;
-  border: 0; font: inherit;
-}
-.act:active { background: #f0e9e2; }
+.picker:active, .picker[aria-expanded="true"] { color: #f0e9e2; }
 
-/* The picker is a real <select> laid transparent over its caret: native list on a phone, and the
-   touch target is the padded box around the glyph rather than the glyph itself. */
-.picker { position: relative; color: #8d8177; }
-/* the touch target grows left and down only: the picker is the row's last item, and anything
-   past its right edge pokes out of the viewport and triggers the shrink-to-fit above */
-.picker select {
-  position: absolute; inset: -6px 0 -6px -10px; width: calc(100% + 10px); height: calc(100% + 12px);
-  opacity: 0; appearance: none; -webkit-appearance: none; border: 0; margin: 0; padding: 0;
+/* Completion list dropping out of the bar: same strip colour, full width, current row inverted.
+   The pane is sticky, hence positioned, so the menu anchors to it for free. */
+.menu {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 2;
+  background: #241f1d; padding: 2px 0 6px;
 }
+.menu .row {
+  display: block; width: 100%; text-align: left;
+  background: none; border: 0; color: #a89c92; font: inherit;
+  padding: 5px 14px;
+}
+.menu .row.cur, .menu .row:active { background: #d9a066; color: #1c1917; }
+.menu .row.dim { color: #574d46; }
+.menu .row.rm { color: #c97b6f; }
+.menu .row.rm:active { background: #c97b6f; color: #1c1917; }
 
 
 /* Terminal block cursor: solid, full line height, blinking on the step. Gone while the field has
@@ -87,9 +91,18 @@ body {
 /* ---------- the cupping sheet, typeset as source ---------- */
 /* The sheet is one function: coffee in the signature, everything measured in the body. Punctuation
    is decoration, nothing is parsed. 16px, not smaller: iOS zooms the page on focus under that. */
+/* The notes are a terminal window: darker pane than the page, its own titlebar strip on top.
+   Fill and contrast do the framing, same as the topbar — no border, terminals don't draw rules. */
 .sheet {
-  margin-top: 8px; padding: 10px 14px 14px;
+  margin: 12px 10px 0; padding: 10px 14px 14px;
+  background: #16120f; border-radius: 6px;
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace; line-height: 1.6;
+}
+.sheet::before {
+  content: attr(data-title);  /* the open file's own path, stamped by <App> */
+  display: block; margin: -10px -14px 8px; padding: 4px 14px;
+  background: #241f1d; border-radius: 6px 6px 0 0;
+  font-size: 12px; color: #8d8177;
 }
 .kw { color: #d9a066; }
 .punc { color: #574d46; }        /* commas, semicolons — structure, not content */

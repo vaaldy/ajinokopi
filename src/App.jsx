@@ -13,6 +13,32 @@ const iso = ts => new Date(ts).toISOString().slice(0, 10);
 const slug = name =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'untitled';
 
+// The file tree as a flat row list: year > month > day > coffees, newest first, folded branches
+// contribute nothing. Rows carry their depth; the renderer only indents and draws.
+function brewRows(brews, open) {
+  const tree = {};
+  brews.forEach(b => {
+    const [y, m, d] = iso(b.createdAt).split('-');
+    (((tree[y] ??= {})[m] ??= {})[d] ??= []).push(b);
+  });
+  const newest = o => Object.keys(o).sort().reverse();
+  const rows = [];
+  newest(tree).forEach(y => {
+    rows.push({ k: y, lvl: 0, label: y + '/' });
+    if (!open[y]) return;
+    newest(tree[y]).forEach(m => {
+      rows.push({ k: `${y}-${m}`, lvl: 1, label: m + '/' });
+      if (!open[`${y}-${m}`]) return;
+      newest(tree[y][m]).forEach(d => {
+        rows.push({ k: `${y}-${m}-${d}`, lvl: 2, label: d + '/' });
+        if (!open[`${y}-${m}-${d}`]) return;
+        tree[y][m][d].forEach(b => rows.push({ b, lvl: 3 }));
+      });
+    });
+  });
+  return rows;
+}
+
 // The coffee line: one field per part, read left to right as "washed natural ethiopia".
 const TRIO = [['process', 'Process'], ['origin', 'Origin'], ['varietal', 'Varietal']];
 
@@ -20,6 +46,10 @@ export default function App() {
   const [flavors, setFlavors] = useState(null);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
+  // one open menu at a time: 'brews' drops the file tree, 'sys' the import/copy/export ops
+  const [menu, setMenu] = useState(null);
+  // which directories of the file tree are unfolded, keyed '2026', '2026-09', '2026-09-01'
+  const [open, setOpen] = useState({});
   const fileRef = useRef();
 
   useEffect(() => {
@@ -52,6 +82,18 @@ export default function App() {
     width: `calc(${Math.max(1, (v || ph).length)}ch + 6px)`,
     ...(v && col && { background: col, color: ink(col) }),
   });
+
+  const rmBrew = () => {
+    // native confirm: one mistap here erases a cup's notes, and the fiction does not get to
+    // outrank a real guard
+    if (!window.confirm(`rm ${slug(cur.name)} — delete this brew?`)) return;
+    setStore(s => {
+      const brews = s.brews.filter(b => b._id !== s.currentId);
+      if (!brews.length) { const b = newBrewDoc('Untitled brew'); return { brews: [b], currentId: b._id }; }
+      return { brews, currentId: brews[0]._id };
+    });
+    setMenu(null);
+  };
 
   const newBrew = () => {
     const b = newBrewDoc('Untitled brew');
@@ -97,7 +139,10 @@ export default function App() {
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
       <div className="pane">
-        <span className="app">brews/</span>
+        {/* the session block doubles as the system menu: tap it for the ops that act on the
+            whole store rather than on one cup */}
+        <button className="app act" aria-expanded={menu === 'sys'}
+                onClick={() => setMenu(m => (m === 'sys' ? null : 'sys'))}>brews/</button>
         <span className="punc">{iso(cur.createdAt)}/</span>
         {/* contenteditable, not an <input>: an input is single-line by spec, so a long name could
             only scroll or push the row — this wraps like text and the whole bar grows taller.
@@ -111,26 +156,52 @@ export default function App() {
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
           <span className="cursor" />
         </span>
-        {/* the picker is a real <select> laid transparent over the caret: native list on a phone,
-            nothing on screen but the glyph */}
-        <span className="picker">
-          {'\u25be'}
-          <select value={store.currentId} aria-label="Open brew"
-                  onChange={e => setStore(s => ({ ...s, currentId: e.target.value }))}>
-            {store.brews.map(b => (
-              <option key={b._id} value={b._id}>{iso(b.createdAt)}/{slug(b.name)}</option>
-            ))}
-          </select>
-        </span>
+        {/* our own menu, not a <select>: the popup a select opens is OS-rendered and CSS cannot
+            reach it, and this one should read as a completion list dropping out of the bar */}
+        <button className="picker" aria-label="Open brew" aria-expanded={menu === 'brews'}
+                onClick={() => {
+                  const opening = menu !== 'brews';
+                  // opening always lands you where you are: the current brew's path unfolded,
+                  // every other branch collapsed
+                  if (opening) {
+                    const [y, m, d] = iso(cur.createdAt).split('-');
+                    setOpen({ [y]: true, [`${y}-${m}`]: true, [`${y}-${m}-${d}`]: true });
+                  }
+                  setMenu(opening ? 'brews' : null);
+                }}>{'\u25be'}</button>
+        {menu === 'brews' && (
+          <div className="menu" role="listbox">
+            {brewRows(store.brews, open).map(r =>
+              r.b ? (
+                <button key={r.b._id} role="option" aria-selected={r.b._id === store.currentId}
+                        className={'row' + (r.b._id === store.currentId ? ' cur' : '')}
+                        style={{ paddingLeft: `calc(14px + ${r.lvl * 2}ch)` }}
+                        onClick={() => { setStore(s => ({ ...s, currentId: r.b._id })); setMenu(null); }}>
+                  {slug(r.b.name)}
+                </button>
+              ) : (
+                <button key={r.k} className="row"
+                        style={{ paddingLeft: `calc(14px + ${r.lvl * 2}ch)` }}
+                        onClick={() => setOpen(o => ({ ...o, [r.k]: !o[r.k] }))}>
+                  {r.label}{open[r.k] ? '' : ' \u25b8'}
+                </button>
+              ))}
+            <button className="row dim" onClick={() => { newBrew(); setMenu(null); }}>
+              + new file...
+            </button>
+          </div>
+        )}
+        {menu === 'sys' && (
+          <div className="menu">
+            <button className="row" onClick={() => { fileRef.current.click(); setMenu(null); }}>import</button>
+            <button className="row" onClick={copy}>{copied ? 'copied!' : 'copy'}</button>
+            <button className="row" onClick={() => { exportJson(); setMenu(null); }}>export</button>
+            <button className="row rm" onClick={rmBrew}>rm {slug(cur.name)}</button>
+          </div>
+        )}
       </div>
 
-      <div className="actions">
-        <button className="act" onClick={() => fileRef.current.click()}>import</button>
-        <button className="act" onClick={newBrew}>new</button>
-        <button className="act" onClick={copy}>{copied ? 'copied!' : 'copy'}</button>
-        <button className="act" onClick={exportJson}>export</button>
-        <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
-      </div>
+      <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
       <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
              onAdd={(category, note) =>
@@ -140,7 +211,7 @@ export default function App() {
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
           the cup is its body. Punctuation is decoration — nothing here is parsed, and every value
           is a plain input sized to what it holds. */}
-      <div className="sheet">
+      <div className="sheet" data-title={`~/brews/${iso(cur.createdAt)}/${slug(cur.name)}`}>
         <div className="sig">
           <span className="kw">func</span> coffee(
           {TRIO.map(([k, ph], i) => (

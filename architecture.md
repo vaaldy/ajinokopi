@@ -18,17 +18,27 @@ test.js               — pure-function checks against src/lib.js (`pnpm test`, 
 ```
 
 ## Screen
-One cup per screen, top to bottom: name (tap pencil to rename) with its date under it, wheel,
-cupping sheet, remarks. Footer: brew switcher + copy/export/import. The sheet reads as source:
+Whole screen = one terminal. Stack of full-width strips: topbar, wheel, notes window. All chrome
+mono; frames drawn with fill + spacing, never border rules.
 
 ```
-coffee:  { washed, colombia, ombligon }
-brew:    { V60 1:16 }
-scores:  {
-           fragrance  ██████░░░░  6.0
-           ...
-         }
+▐brews/▌ 2026-09-01/jairo-strawberry█ ▾     ← topbar: sys menu · path (name editable) · file tree
+        ◯  (wheel)
+~/brews/2026-09-01/jairo-strawberry         ← notes window titlebar
+func coffee(washed, colombia, ombligon) {
+  let brew = V60 1:16;
+  let scores = {
+    fragrance  ██████░░░░  6.0
+    ...
+  };
+  // remarks as comments
+}
 ```
+
+Topbar: `brews/` block = sys menu (import, copy, export, rm current). `▾` = file tree, year >
+month > day > coffees, indented, current path pre-unfolded, `+ new file...` pinned last. Name
+edits in place (contenteditable), block cursor parked after it. All actions live in these two
+menus — no button strips.
 
 ## Vocabulary
 Names used across code, plans, commits. Most point at something on screen.
@@ -50,10 +60,13 @@ Names used across code, plans, commits. Most point at something on screen.
 | **tone** | one logged note's colour contribution to hub. Log note twice, its tone weighs more | `tones` |
 | **share** | how much of hub one tone takes. **Handles** — small draggable circles on hub edge — set it. Pull one inward, that note takes over blend, others shrink | `mixWeightFor` |
 | **cup** / **brew** | one tasting session: name, origin, method, notes, scores. One saved document | `newBrewDoc` |
-| **cupping sheet** | fields under wheel, typeset as a code block: `coffee:`, `brew:` and a nested `scores:` block, each braced | `<App>` |
-| **coffee line** | `{ process, origin, varietal }` — three inputs reading as one sentence, each highlighted in one of the cup's own note colours | `TRIO`, `.trio` |
-| **score bar** | ten mono cells per SCA dimension, `\u2588` filled and `\u2591` empty, with the real range input invisible on top | `.scores` |
-| **intensity** | one of four sliders, only one with a side effect: drives whole wheel's saturation | `sat` |
+| **notes window** / **sheet** | terminal window under wheel holding the cup as source: `func coffee(...)` signature, `let brew`, `let scores`, `//` remarks | `.sheet` |
+| **topbar** / **pane** | sticky strip: sys-menu block, editable file path, file-tree caret | `.pane` |
+| **sys menu** | drops from `brews/`: import, copy, export, `rm` current brew | `menu === 'sys'` |
+| **file tree** | drops from `\u25be`: year/month/day dirs, fold state throwaway | `brewRows`, `open` |
+| **coffee line** | `coffee(process, origin, varietal)` — three inputs reading as one signature, each highlighted in one of the cup's own note colours | `TRIO`, `.sig` |
+| **score bar** | ten mono cells per SCA dimension, `\u2588` filled and `\u2591` empty, with the real range input invisible on top | `.score` |
+| **intensity** | one of four score bars, only one with a side effect: drives whole wheel's saturation | `sat` |
 
 Code-only words: **bearing** = direction from centre (0° up, clockwise). **span** = width in degrees.
 **flip** = label sits on bottom half, drawn reversed to stay right-way-up. **squeeze** (`fscale`) =
@@ -74,11 +87,14 @@ how far pill labels shrank to fit.
 - **Saturation applies per layer, never once around whole wheel.** A CSS `filter` forces its entire subtree into one offscreen buffer, so a single `saturate()` wrapper welded tier 1, tier 2, pills and hub into one raster unit: anything moving re-rasterised all of it, *through* hub blur + `feTurbulence` grain. Tier 1, tier 2, orbit, fingerprint now each carry their own `filter: sat`, rasterise independently.
 - Hub tone circles are radial gradients already fading to `stopOpacity 0`, so `feGaussianBlur` over them bought very little — and its `<animateTransform repeatCount="indefinite">` drift meant that blur re-ran every frame, forever, over a filter region 16× disc area. Filter gone. Softness comes from the gradients.
 - **src/wheel.jsx — `<Fingerprint>`**: the hub. One radial gradient per tone over a base coat, clipped to disc, grain wash + vignette on top. Drift uses SVG `<animateTransform>`, not CSS transform, which would escape the clip in some renderers.
-- **src/App.jsx — `<App>`**: state = `flavors` (fetched yaml) + `store` ({brews, currentId}, persisted via effect). `<Wheel>` keyed by brew id, so switching cups resets wheel transient state.
-- **src/App.jsx + styles.css — the sheet is typeset, not boxed**: every field is a code-block line — a mono row, braced, with the value sized to its own content in `ch` (mono makes a character count a width; the `size` attribute pads by a couple of characters per field and that slack alone wrapped the row). Separators are real space characters, not flex `gap`: two inline-blocks with only margin between them give the line nowhere to break, so the row overflowed instead of wrapping. The coffee line hangs its wrapped rows under the first word via `padding-left: 2ch` + `text-indent: -2ch`.
+- **src/App.jsx — `<App>`**: state = `flavors` (fetched yaml) + `store` ({brews, currentId}, persisted via effect) + `menu` (which topbar menu open, one at a time) + `open` (file-tree fold state, throwaway). `<Wheel>` keyed by brew id, so switching cups resets wheel transient state. `brewRows` flattens brews into indented tree rows (year > month > day, newest first) at render time.
+- **Identity is `_id`, never the name.** Rename = edit the path in place; selection, merge and delete all key by `_id`, so two brews may share a name. `rm` guards with native `confirm`, falls to first remaining brew, recreates `Untitled brew` when the store empties.
+- **Topbar name is contenteditable, not `<input>`**: inputs are single-line by spec, so a long name could only scroll or push the row — contenteditable wraps and the whole bar grows taller. Uncontrolled on purpose (keyed by brew id, ref seeds text): feeding keystrokes back through React resets the caret to the start.
+- **Menus are custom, not `<select>`**: OS renders a select's popup, CSS cannot reach it. Both menus anchor `position: absolute; top: 100%` to the sticky (hence positioned) pane.
+- **iOS width discipline**, learned the hard way: any element poking past the viewport makes Safari shrink the whole page to fit (`overflow-x: clip` on both `html` and `body` guards it); editable text under 16px makes Safari zoom on focus (everything editable is 16px); absolute overlays must never extend right past their row.
+- **src/App.jsx + styles.css — the sheet is typeset, not boxed**: every field is a code-block line — a mono row, braced, with the value sized to its own content in `ch` (mono makes a character count a width; the `size` attribute pads by a couple of characters per field and that slack alone wrapped the row). Separators are real space characters, not flex `gap`: two inline-blocks with only margin between them give the line nowhere to break, so the row overflowed instead of wrapping. The signature carries a 2ch hanging indent; each argument and its trailing punctuation share a nowrap span, because browsers may break between two inline-blocks even with no space — that stranded `) {` alone on a row. Remarks' `//` gutter is a repeating SVG background, not text, so the stored remark stays plain prose.
 - **Field highlights cycle the cup's own note colours**, `noteColorOf` per logged note, first to process, second to origin, third to varietal. The cycle never runs longer than the coffee line: brew and the score bars reuse those same three rather than putting a fourth colour on screen that nothing above them matches. No notes logged, no highlights. `ink()` picks the text colour over each fill.
 - **Score bars draw in glyphs, the native range still drives them**: ten `█`/`░` cells per dimension, with `input[type=range]` absolutely positioned over them at `opacity: 0`. Touch behaviour, keyboard and screen reader stay native for the price of one rule; the drawing costs no pointer code. Bars round to whole cells while the input steps 0.25 — the printed number carries the precision.
-- Inputs stay at 16px: iOS zooms the page on focus for anything smaller.
 - **.github/workflows — release pipeline**: `ci.yml` runs install/test/build on every push to main and every PR, deploys nothing. `tag.yml` fires on every push to main: if `version` is already tagged it exits quietly (the state of most pushes), else validates semver, runs the tests, then pushes an annotated `v<semver>` tag as `github-actions[bot]`. `release.yml` builds the tag, uploads `dist/` as a Pages artifact, deploys, and cuts a GitHub Release with auto-generated notes.
 - **`release.yml` has two entry points because a tag pushed with the default `GITHUB_TOKEN` never triggers another workflow.** GitHub's guard against recursive runs. So it declares both `workflow_call` (tag.yml invokes it directly after tagging, passing `tag:`) and `push: tags` (a hand-pushed tag still deploys — the escape hatch). On the `workflow_call` path `github.ref` is main, not the tag, so build checks out `inputs.tag` explicitly and the release step reads `inputs.tag || github.ref_name`.
 - **`tag.yml` asks "is this version tagged yet", never "did package.json change".** Earlier shape diffed `version` against `HEAD~1` behind `paths: ['package.json']`, and stranded the common case: red tests leave no tag, but the follow-up fix commit touches `src/` only, so the tagger never woke again and the version sat unreleased in silence. Tags already record what has shipped, so the diff was redundant state. Now a retry after red tests is free — same `version`, just push the fix. Checkout needs `fetch-tags: true`; without tags the check can never see one and the failure surfaces later as a confusing push error.
