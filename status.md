@@ -15,6 +15,10 @@ restyled as a code block — braced rows, note-coloured highlights, scores as a 
 Next, version not picked yet:
 - Nonlinear gradient wheel rendering — smoother tier colour ramp than today's linear steps.
 - Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
+- Push the code homage across the whole sheet, not just the field rows: notes section wrapped as
+  `def coffee( )`, brew as an uppercase constant (`BREW = V60 1:16`), scores as a dict literal
+  inside the block, remarks as `#` comments, one per line. Decide first whether the fake syntax
+  stays readable to someone who does not write code — the sheet is the part a taster fills in.
 - Daily brew tracking — brews grouped and browsable by date, one cup per day view.
 
 Design-doc options `1c` (SCA cupping pass) and `2d` (radial dial cluster) dropped — `1d`
