@@ -181,7 +181,7 @@ t('mergeBrews: keeps existing not in import', merged.some(x => x._id === b._id))
 t('mergeBrews: fills an old imported doc', mergeBrews([], [old])[0].scores.Sweetness === 6);
 
 const yamlText = readFileSync(new URL('./public/flavors.yaml', import.meta.url), 'utf8');
-t('flavors.yaml: 9 families', (yamlText.match(/^[A-Z][^\s:]*:/gm) || []).length === 9);
+t('flavors.yaml: 10 families', (yamlText.match(/^[A-Z][^:\n]*:/gm) || []).length === 10);
 t('flavors.yaml: every note colour is a hex triple', (yamlText.match(/^\s{4}[^\s:][^:]*: "#[0-9a-f]{6}"$/gm) || []).length >= 60);
 
 for (const [name, ok] of results) console.log((ok ? 'PASS' : 'FAIL') + ' ' + name);

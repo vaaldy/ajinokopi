@@ -9,11 +9,18 @@ v0.3 = release CI/CD: version-bump auto-tagging, Pages deploy, GitHub Releases (
 v0.3.2 = brew fields process, origin, varietal, brew method; whole screen restyled as terminal —
 topbar path with editable name + date-dir, sys menu (import/copy/export/rm), indented file tree
 with `+ new file...`, notes window as `func coffee()` source, note-coloured highlights, mono score
-bars (in progress — ready to push, UAT on phone)
+bars (done)
+
+v0.3.3 = hub true-blend base coat (`mixColors`, linear sRGB), zen-style tone gradients (oversized,
+eased falloff, pre-mixed toward blend, glint removed), wide/landscape grid layout (wheel centred,
+terminal full-height right), portrait wheel height cap, topbar `+` new brew, fat-finger padding,
+Esc closes menus, auto-growing remarks, Malic family (in progress — push to deploy)
 
 ## Open
 
 Next, version not picked yet:
+- Camera logging — snap photo as part of brew record.
+- Text parsing from coffee bag label — photo or camera text into brew fields (origin, process, varietal).
 - Nonlinear gradient wheel rendering — smoother tier colour ramp than today's linear steps.
 - Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Daily brew tracking — file tree groups by date now; still no per-day view or day summary.

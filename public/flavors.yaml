@@ -68,6 +68,17 @@ Tropical:
     lychee: "#f2ddd8"
     banana: "#f4e8ad"
 
+Malic:
+  color: "#dbe4a6"
+  notes: [green apple, red apple, pear, white grape, kiwi, gooseberry]
+  noteColors:
+    green apple: "#cfe29a"
+    red apple: "#f0b4a4"
+    pear: "#e8e0a8"
+    white grape: "#dde8b8"
+    kiwi: "#b8d996"
+    gooseberry: "#d4e0a0"
+
 Sweet:
   color: "#e8c79a"
   notes: [honey, caramel, brown sugar, muscovado, sugar cane, raw sugar, wheatgrass]
