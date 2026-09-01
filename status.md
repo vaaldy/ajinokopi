@@ -6,10 +6,10 @@ v0.1 = tap-drill flavor wheel, YAML flavor tree, localStorage brew store (Mongo-
 v0.2 = press-drag-release drill, orbiting note pills, live fingerprint hub, SCA cupping sheet, brew-named export files (done)
 v0.3 = release CI/CD: version-bump auto-tagging, Pages deploy, GitHub Releases (done — v0.3.0-dev.1 tagged, published as prerelease, live at `https://vaaldy.github.io/ajinokopi/`)
 
-v0.3.1 = brew fields process, origin, varietal, brew method; whole screen restyled as terminal —
+v0.3.2 = brew fields process, origin, varietal, brew method; whole screen restyled as terminal —
 topbar path with editable name + date-dir, sys menu (import/copy/export/rm), indented file tree
 with `+ new file...`, notes window as `func coffee()` source, note-coloured highlights, mono score
-bars (in progress — dev.2 ready to push, UAT on phone)
+bars (in progress — ready to push, UAT on phone)
 
 ## Open
 
@@ -17,7 +17,7 @@ Next, version not picked yet:
 - Nonlinear gradient wheel rendering — smoother tier colour ramp than today's linear steps.
 - Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Daily brew tracking — file tree groups by date now; still no per-day view or day summary.
-- dev.2 phone UAT: tree `\u25b8` rows tappable at row height, long names in tree/topbar, score-bar
+- v0.3.2 phone UAT: tree `\u25b8` rows tappable at row height, long names in tree/topbar, score-bar
   `\u2591` glyph render via font fallback, menus over the wheel, `rm` confirm flow.
 - Decide whether fake syntax stays readable to non-coders — sheet is what a taster fills in.
 - Sharing consolidation: copy + export are one intent (share); `navigator.share` with file + text,
