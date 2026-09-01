@@ -169,6 +169,9 @@ export default function App() {
                   }
                   setMenu(opening ? 'brews' : null);
                 }}>{'\u25be'}</button>
+        {/* same action as "+ new file..." in the tree, one tap instead of two */}
+        <button className="picker" aria-label="New brew"
+                onClick={() => { newBrew(); setMenu(null); }}>+</button>
         {menu === 'brews' && (
           <div className="menu" role="listbox">
             {brewRows(store.brews, open).map(r =>

@@ -37,7 +37,9 @@ body {
 
 .picker {
   background: none; border: 0; color: #8d8177; font: inherit;
-  padding: 0 4px; margin: 0;
+  /* 10px not 4: two ~18px targets 1ch apart in the thumb corner was fat-finger bait, and a
+     missed caret lands on "+", which creates state */
+  padding: 0 10px; margin: 0;
 }
 .picker:active, .picker[aria-expanded="true"] { color: #f0e9e2; }
 
