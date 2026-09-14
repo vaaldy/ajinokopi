@@ -15,6 +15,7 @@ v0.3.3 = hub true-blend base coat (`mixColors`, linear sRGB), zen-style tone gra
 eased falloff, pre-mixed toward blend, glint removed), wide/landscape grid layout (wheel centred,
 terminal full-height right), portrait wheel height cap, topbar `+` new brew, fat-finger padding,
 Esc closes menus, auto-growing remarks, Malic family (in progress — push to deploy)
+v0.3.4-dev.1 = revised seed flavor taxonomy: Tartaric grapes, Sweet monk fruit/stevia, Herbal / Tea outer band (planned)
 
 ## Open
 
