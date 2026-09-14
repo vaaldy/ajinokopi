@@ -70,18 +70,24 @@ Tropical:
 
 Malic:
   color: "#dbe4a6"
-  notes: [green apple, red apple, pear, white grape, kiwi, gooseberry]
+  notes: [green apple, red apple, pear, kiwi, gooseberry]
   noteColors:
     green apple: "#cfe29a"
     red apple: "#f0b4a4"
     pear: "#e8e0a8"
-    white grape: "#dde8b8"
     kiwi: "#b8d996"
     gooseberry: "#d4e0a0"
 
+Tartaric:
+  color: "#ded0b8"
+  notes: [white grape, red grape]
+  noteColors:
+    white grape: "#dde8b8"
+    red grape: "#d8a7ae"
+
 Sweet:
   color: "#e8c79a"
-  notes: [honey, caramel, brown sugar, muscovado, sugar cane, raw sugar, wheatgrass]
+  notes: [honey, caramel, brown sugar, muscovado, sugar cane, raw sugar, monk fruit, stevia, wheatgrass]
   noteColors:
     honey: "#f2d494"
     caramel: "#e6bb8e"
@@ -89,6 +95,8 @@ Sweet:
     muscovado: "#c99f83"
     sugar cane: "#e3e0b0"
     raw sugar: "#eddcb4"
+    monk fruit: "#e8d8a8"
+    stevia: "#d4e0aa"
     wheatgrass: "#c7dfa4"
 
 Nutty/Cocoa/Spice:
@@ -108,10 +116,11 @@ Nutty/Cocoa/Spice:
     black pepper: "#b6ada4"
     anise: "#c0b6a8"
 
-Tea:
+Herbal / Tea:
   color: "#cfdcbe"
-  notes: [green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha]
+  notes: [herbal, green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha]
   noteColors:
+    herbal: "#b8d7ad"
     green tea: "#c9e0b0"
     oolong: "#e0d3a6"
     black tea: "#cba894"
