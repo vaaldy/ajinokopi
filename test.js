@@ -185,6 +185,10 @@ t('flavors.yaml: 11 families', (yamlText.match(/^[A-Z][^:\n]*:/gm) || []).length
 const malicBlock = yamlText.match(/^Malic:\n(?:(?:  .*\n)|\n)*/m)?.[0] || '';
 t('flavors.yaml: grapes live in Tartaric, not Malic',
   /Tartaric:\n[\s\S]*?notes: \[white grape, red grape\]/.test(yamlText) && !malicBlock.includes('grape'));
+const herbalTeaBlock = yamlText.match(/^Herbal \/ Tea:\n(?:(?:  .*\n)|\n)*/m)?.[0] || '';
+t('flavors.yaml: Herbal / Tea has the chosen five-note outer band',
+  herbalTeaBlock.includes('groups: [7, 5]') &&
+  herbalTeaBlock.includes('notes: [green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha, thyme, rhubarb, herbal, peppery, tomato]'));
 t('flavors.yaml: every note colour is a hex triple', (yamlText.match(/^\s{4}[^\s:][^:]*: "#[0-9a-f]{6}"$/gm) || []).length >= 60);
 
 for (const [name, ok] of results) console.log((ok ? 'PASS' : 'FAIL') + ' ' + name);

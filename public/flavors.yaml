@@ -118,9 +118,9 @@ Nutty/Cocoa/Spice:
 
 Herbal / Tea:
   color: "#cfdcbe"
-  notes: [herbal, green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha]
+  groups: [7, 5]
+  notes: [green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha, thyme, rhubarb, herbal, peppery, tomato]
   noteColors:
-    herbal: "#b8d7ad"
     green tea: "#c9e0b0"
     oolong: "#e0d3a6"
     black tea: "#cba894"
@@ -128,6 +128,11 @@ Herbal / Tea:
     pu-erh: "#bfa791"
     matcha: "#b9d69c"
     hojicha: "#d3b394"
+    thyme: "#a7c790"
+    rhubarb: "#df9b9b"
+    herbal: "#b8d7ad"
+    peppery: "#b9ada4"
+    tomato: "#e3aaa0"
 
 Defects:
   color: "#cbc6bd"
