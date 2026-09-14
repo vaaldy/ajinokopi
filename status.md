@@ -19,10 +19,10 @@ Esc closes menus, auto-growing remarks, Malic family (in progress — push to de
 ## Open
 
 Next, version not picked yet:
+- Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Camera logging — snap photo as part of brew record.
 - Text parsing from coffee bag label — photo or camera text into brew fields (origin, process, varietal).
 - Nonlinear gradient wheel rendering — smoother tier colour ramp than today's linear steps.
-- Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Daily brew tracking — file tree groups by date now; still no per-day view or day summary.
 - v0.3.2 phone UAT: tree `\u25b8` rows tappable at row height, long names in tree/topbar, score-bar
   `\u2591` glyph render via font fallback, menus over the wheel, `rm` confirm flow.
