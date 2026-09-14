@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import yaml from 'js-yaml';
 import {
   SCA_DIMS, validateBrews, newBrewDoc, mergeBrews, loadStore, saveStore, noteColorOf, ink,
@@ -50,7 +50,10 @@ export default function App() {
   const [menu, setMenu] = useState(null);
   // which directories of the file tree are unfolded, keyed '2026', '2026-09', '2026-09-01'
   const [open, setOpen] = useState({});
+  const [nameCompact, setNameCompact] = useState(false);
   const fileRef = useRef();
+  const typingRef = useRef();
+  const handleRef = useRef();
 
   useEffect(() => {
     fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
@@ -62,9 +65,28 @@ export default function App() {
     return () => window.removeEventListener('keydown', esc);
   }, []);
 
+  const cur = store.brews.find(b => b._id === store.currentId);
+
+  useLayoutEffect(() => {
+    const cell = typingRef.current;
+    if (!cell || !cur) return undefined;
+    const fitName = () => {
+      // Measure the default size even when the previous render was compact. React state only
+      // changes when the result changes, so the measurement cannot oscillate on resize.
+      const compact = cell.classList.contains('compact');
+      if (compact) cell.classList.remove('compact');
+      const overflows = cell.scrollWidth > cell.clientWidth;
+      if (compact) cell.classList.add('compact');
+      setNameCompact(prev => (prev === overflows ? prev : overflows));
+    };
+    fitName();
+    const observer = new ResizeObserver(fitName);
+    observer.observe(cell);
+    return () => observer.disconnect();
+  }, [flavors, cur?._id, cur?.name]);
+
   if (!flavors) return null;
 
-  const cur = store.brews.find(b => b._id === store.currentId);
   const updateCur = fn =>
     setStore(s => ({ ...s, brews: s.brews.map(b => (b._id === s.currentId ? fn(b) : b)) }));
   const setField = (k, v) => updateCur(b => ({ ...b, [k]: v }));
@@ -146,17 +168,20 @@ export default function App() {
       <div className="pane">
         {/* the session block doubles as the system menu: tap it for the ops that act on the
             whole store rather than on one cup */}
-        <button className="app act" aria-expanded={menu === 'sys'}
-                onClick={() => setMenu(m => (m === 'sys' ? null : 'sys'))}>brews/</button>
+        <button className="app act" aria-label="System menu" aria-expanded={menu === 'sys'}
+                onClick={() => setMenu(m => (m === 'sys' ? null : 'sys'))}>/</button>
         <span className="punc">{iso(cur.createdAt)}/</span>
-        {/* contenteditable, not an <input>: an input is single-line by spec, so a long name could
-            only scroll or push the row — this wraps like text and the whole bar grows taller.
-            Uncontrolled on purpose (keyed by brew, ref sets initial text): feeding the state back
-            through React each keystroke resets the caret to the start. */}
-        <span className="typing">
+        {/* contenteditable, not an <input>: keeps the filename editable without React resetting
+            the caret on every keystroke. The topbar stays one line; long names get a compact class.
+            Uncontrolled on purpose (keyed by brew, ref sets initial text). */}
+        <span ref={typingRef} className={'typing' + (nameCompact ? ' compact' : '')}
+              onClick={() => handleRef.current?.focus()}>
           <span className="handle" contentEditable suppressContentEditableWarning
                 key={cur._id} role="textbox" aria-label="Brew name"
-                ref={el => { if (el && document.activeElement !== el && el.textContent !== cur.name) el.textContent = cur.name; }}
+                ref={el => {
+                  handleRef.current = el;
+                  if (el && document.activeElement !== el && el.textContent !== cur.name) el.textContent = cur.name;
+                }}
                 onInput={e => setField('name', e.currentTarget.textContent.replace(/\n/g, ''))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
           <span className="cursor" />

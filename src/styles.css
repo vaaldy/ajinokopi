@@ -17,19 +17,21 @@ body {
 }
 
 /* ---------- topbar ---------- */
-/* One row that gets taller, never a second row: the name cell wraps internally, every other cell
-   stretches with the bar, the caret stays top right. */
+/* One compact row: the filename gets smaller and clips rather than growing the bar. */
 .pane {
   position: sticky; top: 0; z-index: 2;
-  display: flex; align-items: stretch; gap: 0 1ch; padding: 5px 14px;
+  display: flex; align-items: center; white-space: nowrap; gap: 0 1ch; padding: 5px 14px;
   background: #241f1d; color: #e7e0d8;
-  /* 16px, not 14: the name is editable, and iOS zooms the page on focusing editable text under
-     16px — that zoom is what made the width look like it "fixed itself" after a keystroke */
+  /* Keep the controls at 16px for mobile; the filename is deliberately smaller below so the
+     pane stays one line. */
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
 }
-.typing { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.handle { outline: none; }
-.picker { align-self: flex-start; }
+.typing {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
+}
+.typing.compact { font-size: 12px; line-height: 1.35; }
+.handle { display: inline-block; vertical-align: bottom; outline: none; }
+.picker { align-self: center; }
 .app { background: #d9a066; color: #1c1917; padding: 1px 1ch; }
 /* the session block as a button: reset chrome, invert brighter while its menu is open */
 .act { border: 0; font: inherit; padding: 1px 1ch; }
