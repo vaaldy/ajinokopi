@@ -37,14 +37,14 @@ Caveman applies to docs only. Code, code comments, commit messages, PR bodies st
 ## Dev cycle
 
 Releases named by semver, never "phase N" — phase N shipped as v0.N. `package.json` `version`
-is source of truth; a bump on main cuts the release — `tag.yml` tags it, `release.yml` deploys it. Never `git tag` by hand.
+is source of truth; a bump on main cuts the release — `tag.yml` tags it, `release.yml` deploys it. 
+You can run the following deployment-test before running `git tag`
 
 ```
 /note-take                 # before: read docs, check drift, open version line
 <build>                    # ponytail rules
 pnpm test && pnpm build    # must pass
-/note-take                 # after: architecture.md = reality, status.md = version state
-<user commits>             # git manual, agent never commits/tags/pushes
+/note-take                 # after: architecture.md = reality, status.md  
 ```
 
 ## Gotchas
@@ -52,5 +52,4 @@ pnpm test && pnpm build    # must pass
 - `.jsx` untested. Anything touching `src/wheel.jsx` or `src/App.jsx` needs the user on a real phone.
 - Perf lives in the render tree, not the maths. CSS `filter` on an ancestor welds its whole subtree
   into one raster unit — see `architecture.md` Blocks.
-- `git status` to read is fine. Changing git state is not.
 - pnpm only. `npm install` regenerates `package-lock.json` and desyncs from CI's `--frozen-lockfile`.
