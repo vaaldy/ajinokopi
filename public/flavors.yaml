@@ -27,7 +27,7 @@ Floral:
 
 Citrus:
   color: "#f7d7a2"
-  notes: [navel orange, sicilian orange, mandarin, grapefruit, lime, lemon, bergamot]
+  notes: [navel orange, sicilian orange, mandarin, grapefruit, lime, lemon, bergamot, lemongrass]
   noteColors:
     navel orange: "#f9c489"
     sicilian orange: "#f4b06e"
@@ -36,6 +36,7 @@ Citrus:
     lime: "#cfe5a8"
     lemon: "#f7e79a"
     bergamot: "#e2e2a6"
+    lemongrass: "#d7e3a1"
 
 Stonefruit:
   color: "#f6c3ad"

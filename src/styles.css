@@ -105,11 +105,26 @@ body {
 .workspace { min-width: 0; }
 .wheelStage {
   width: min(100%, max(393px, 100dvh - 560px)); aspect-ratio: 1;
-  min-width: 0; margin-inline: auto;
+  min-width: 0; margin-inline: auto; position: relative;
   display: flex; align-items: center; justify-content: center;
 }
 .wheelStage .shareCard {
   width: calc(100% - 20px); height: calc(100% - 12px); margin: 12px 10px 0;
+}
+.runCardOverlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: flex; justify-content: center; }
+.runCardOverlay .shareCard { animation: cardExpand .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: center; }
+.finalCardOverlay .shareCard { animation: none; }
+@keyframes cardExpand {
+  0% { opacity: 0; transform: scale(.18); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes wheelTierIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes pillOrbitIn {
+  0% { transform: scale(1.32); }
+  100% { transform: scale(1); }
 }
 .backToCup {
   display: block; margin: 12px 0 0 auto; padding: 8px 14px;
@@ -132,16 +147,22 @@ body {
 .run.edit { background: #d9a066; }
 .run.edit:active { background: #f0e9e2; }
 .shareCard {
-  margin: 12px 10px 0; border-radius: 6px; color: #fff;
+  position: relative; overflow: hidden;
+  margin: 12px 10px 0; border-radius: 6px; color: #574d46;
   font: 500 15px/1.5 'JetBrains Mono', ui-monospace, monospace;
 }
-.shareCardShade { height: 100%; min-height: 180px; padding: 14px; border-radius: inherit; background: rgba(20, 15, 13, .48); }
-.shareCardHead { display: flex; justify-content: space-between; gap: 1ch; color: rgba(255,255,255,.72); font-size: 11px; text-transform: uppercase; }
+.cardFingerprint { position: absolute; inset: 0; width: 100%; height: 100%; }
+.shareCardShade { position: relative; z-index: 1; height: 100%; min-height: 180px; padding: 14px; border-radius: inherit; background: transparent; }
+.shareCardHead { display: flex; justify-content: space-between; gap: 1ch; color: #574d46; font-size: 11px; text-transform: uppercase; }
+.shareCardDate { color: #574d46; font: 600 16px 'JetBrains Mono', ui-monospace, monospace; text-transform: none; }
 .shareCard h2 { margin: 28px 0 4px; font: 600 22px/1.15 system-ui, sans-serif; }
 .shareCard p { margin-top: 8px; }
-.shareCardMeta { color: rgba(255,255,255,.82); }
-.shareCardNotes { font-size: 13px; }
-.shareCardRemark { white-space: pre-wrap; color: rgba(255,255,255,.78); }
+.shareCardMeta { color: #574d46; }
+.shareCardNotes { font-size: 13px; color: #574d46; }
+.shareCardRemark {
+  white-space: pre-wrap; color: #574d46;
+  font: 400 15px/23px 'JetBrains Mono', ui-monospace, monospace;
+}
 .sheet::before {
   content: attr(data-title);  /* the open file's own path, stamped by <App> */
   display: block; margin: -10px -14px 8px; padding: 4px 14px;

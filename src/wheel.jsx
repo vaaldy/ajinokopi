@@ -8,8 +8,8 @@ import {
 // feTurbulence is the most expensive primitive in SVG and on phones it is not GPU-accelerated.
 // Nothing here depends on state, so the element is built once at module scope: a stable element
 // reference lets React skip the subtree entirely instead of rebuilding the filter every render.
-const GRAIN = (
-  <filter id="fpgrain">
+const GRAIN = id => (
+  <filter id={id}>
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" result="noise" />
     <feColorMatrix type="saturate" values="0" result="grey" />
     {/* clip the noise to the source circle — otherwise the turbulence fills the
@@ -21,8 +21,10 @@ const GRAIN = (
 // The hub is the cup itself: one soft tone per logged note, each sitting just outside the
 // disc on its own bearing so only its inner arc shows, the whole stack blurred and clipped.
 // Pulling a tone inward (its handle, drawn by <Wheel>) grows its share of the blend.
-function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
-  const gid = k => 'fpg-' + k.replace(/[^a-z0-9]/gi, '');
+export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix = 'fp', decorations = true, clipDisc = true }) {
+  const gid = k => idPrefix + '-' + k.replace(/[^a-z0-9]/gi, '');
+  const clipId = idPrefix + '-clip';
+  const grainId = idPrefix + '-grain';
   const glide = { transition: dragging ? 'none' : 'all 1s cubic-bezier(.2,.8,.2,1)' };
   // Drift is animated with SVG-native <animateTransform> rather than a CSS transform: a CSS
   // animation here escapes the ancestor's clip-path + filter in some renderers and lets the
@@ -35,8 +37,10 @@ function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
   return (
     <g style={{ pointerEvents: 'none', filter: sat }}>
       <defs>
-        <clipPath id="fpclip"><circle cx={cx} cy={cy} r={r} /></clipPath>
-        {GRAIN}
+        <clipPath id={clipId}>
+          {clipDisc ? <circle cx={cx} cy={cy} r={r} /> : <rect x="0" y="0" width="390" height="390" />}
+        </clipPath>
+        {GRAIN(grainId)}
         <radialGradient id={gid('base')} cx="50%" cy="38%" r="78%">
           <stop offset="0%" stopColor={baseCol} stopOpacity="1" />
           <stop offset="100%" stopColor={baseCol} stopOpacity="0.72" />
@@ -53,7 +57,7 @@ function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
           </radialGradient>
         ))}
       </defs>
-      <g clipPath="url(#fpclip)">
+      <g clipPath={`url(#${clipId})`}>
         <circle cx={cx} cy={cy} r={r * 1.6} fill={`url(#${gid('base')})`}
                 style={{ transition: 'fill 1.1s cubic-bezier(.2,.8,.2,1)' }} />
         {tones.length > 1 && tones.map((l, i) => (
@@ -64,10 +68,12 @@ function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
           </circle>
         ))}
       </g>
-      <circle cx={cx} cy={cy} r={r} filter="url(#fpgrain)"
-              style={{ opacity: 0.12, mixBlendMode: 'overlay' }} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth={r * 0.16}
-              style={{ opacity: 0.5 }} />
+      {decorations && <>
+        <circle cx={cx} cy={cy} r={r} filter={`url(#${grainId})`}
+                style={{ opacity: 0.12, mixBlendMode: 'overlay' }} />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth={r * 0.16}
+                style={{ opacity: 0.5 }} />
+      </>}
     </g>
   );
 }
@@ -76,7 +82,7 @@ function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat }) {
 // notes radially outward on that family's own bearing (tier 2). Logged notes leave the drill
 // entirely and orbit the hub as draggable pills. Press-drag-release and tap-tap both work:
 // a drag commits on release, a tap leaves the fan open ("sticky") so the next tap logs.
-export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
+export function Wheel({ flavors, notes, intensity, runAway = false, returning = false, onFingerprint, onAdd, onRemove }) {
   const [cat, setCat] = useState(null);      // open family, as an index into the ring
   const [note, setNote] = useState(null);    // hot note under the pointer
   const [closing, setClosing] = useState(false);
@@ -112,6 +118,15 @@ export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
     notes: notes.filter((_, j) => j !== dying), mix, colorOf, ringSegs: ring, pills,
     cx: F.ox, cy: F.oy, r: F.hub,
   });
+  const fingerprintCallback = useRef(onFingerprint);
+  const fingerprintSent = useRef('');
+  fingerprintCallback.current = onFingerprint;
+  const fingerprintSignature = JSON.stringify({ baseCol, tones: tones.map(t => [t.note, t.bearing, t.p, t.d, t.R]) });
+  useEffect(() => {
+    if (fingerprintSignature === fingerprintSent.current) return;
+    fingerprintSent.current = fingerprintSignature;
+    fingerprintCallback.current?.({ tones, baseCol, hubR: F.hub, cx: F.ox, cy: F.oy });
+  }, [fingerprintSignature]);
   const vb = viewBoxFor(open, tiered);
 
   // ---- pointer plumbing: everything is resolved to (r, ang) around the origin first ----
@@ -232,7 +247,8 @@ export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
   const settled = open && !closing; // recede only while genuinely open, not on the way out
   const tier1 = (
     <g style={{ transform: settled ? 'scale(0.88)' : 'scale(1)', transformOrigin: `${F.ox}px ${F.oy}px`,
-                transition: 'transform .42s cubic-bezier(.2,.8,.2,1)', filter: sat }}>
+                opacity: runAway ? 0 : 1, animation: returning ? 'wheelTierIn .62s cubic-bezier(.2,.8,.2,1) both' : 'none',
+                transition: 'transform .42s cubic-bezier(.2,.8,.2,1), opacity .5s ease', filter: sat }}>
       {ring.map((seg, i) => {
         const def = flavors[seg.cat], flip = flipped(seg.mid), fg = ink(def.color);
         // Compact dot-joined single line ONLY while the outer pill ring is active (the tier 1
@@ -318,7 +334,10 @@ export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
   // ---- the pill orbit: logged notes, draggable around the rim, tap to delete ----
   const nextRing = {};
   const orbit = (
-    <g>
+    <g style={{ transformOrigin: `${F.ox}px ${F.oy}px`,
+                transform: runAway || returning ? 'scale(1.32)' : 'scale(1)',
+                animation: returning ? 'pillOrbitIn .62s cubic-bezier(.2,.8,.2,1) both' : 'none',
+                transition: 'transform .62s cubic-bezier(.2,.8,.2,1)' }}>
       {pills.map(p => {
         const pad = 1.4, mid = p.a0 + (p.a1 - p.a0) / 2;
         const [pcx, pcy] = polar(F.ox, F.oy, p.rMid, mid);
