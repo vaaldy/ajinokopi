@@ -101,11 +101,38 @@ body {
    is decoration, nothing is parsed. 16px, not smaller: iOS zooms the page on focus under that. */
 /* The notes are a terminal window: darker pane than the page, its own titlebar strip on top.
    Fill and contrast do the framing, same as the topbar — no border, terminals don't draw rules. */
+.workspace { min-width: 0; }
+.resultMode .wheel, .resultMode .editor { display: none; }
+.resultView { padding: 12px 10px 0; }
+.backToCup {
+  display: block; margin: 12px 0 0 auto; padding: 8px 14px;
+  border: 0; border-radius: 4px; background: #241f1d; color: #e7e0d8;
+  font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
+}
+.backToCup:active { background: #d9a066; color: #1c1917; }
+.editor { min-width: 0; }
 .sheet {
   margin: 12px 10px 0; padding: 10px 14px 14px;
   background: #16120f; border-radius: 6px;
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace; line-height: 1.6;
 }
+.run {
+  display: block; width: fit-content; margin: 8px 10px 0 auto; padding: 8px 18px;
+  border: 0; border-radius: 4px; background: #b8d996; color: #1c1917;
+  font: 600 16px 'JetBrains Mono', ui-monospace, monospace; text-align: left;
+}
+.run:active { background: #d4e8bd; }
+.shareCard {
+  margin: 12px 10px 0; border-radius: 6px; color: #fff;
+  font: 500 15px/1.5 'JetBrains Mono', ui-monospace, monospace;
+}
+.shareCardShade { min-height: 180px; padding: 14px; border-radius: inherit; background: rgba(20, 15, 13, .48); }
+.shareCardHead { display: flex; justify-content: space-between; gap: 1ch; color: rgba(255,255,255,.72); font-size: 11px; text-transform: uppercase; }
+.shareCard h2 { margin: 28px 0 4px; font: 600 22px/1.15 system-ui, sans-serif; }
+.shareCard p { margin-top: 8px; }
+.shareCardMeta { color: rgba(255,255,255,.82); }
+.shareCardNotes { font-size: 13px; }
+.shareCardRemark { white-space: pre-wrap; color: rgba(255,255,255,.78); }
 .sheet::before {
   content: attr(data-title);  /* the open file's own path, stamped by <App> */
   display: block; margin: -10px -14px 8px; padding: 4px 14px;
@@ -179,10 +206,25 @@ body {
   /* Wheel scales with the viewport instead of freezing at phone size — a 393px wheel on a
      2000px window read miniature and left the bottom half of the screen dead. 50vw keeps the
      sheet's share; the dvh term still rules short windows (landscape phone: 333px). */
+  #root { --wheel-size: clamp(320px, min(50vw, 100dvh - 120px), 800px); }
   .wheel {
-    width: clamp(320px, min(50vw, 100dvh - 120px), 800px);
+    width: var(--wheel-size);
     align-self: center;
   }
-  /* full-height terminal pane, prompt at top — like a real shell session */
-  .sheet { align-self: stretch; margin-bottom: 12px; }
+  .workspace {
+    grid-column: 1 / -1; grid-row: 2; min-height: 0;
+    display: grid; grid-template-columns: auto minmax(340px, 1fr);
+  }
+  .workspace > .wheel { grid-column: 1; grid-row: 1; }
+  .editor {
+    grid-column: 2; grid-row: 1; align-self: center; min-height: 0;
+    height: var(--wheel-size); position: relative;
+    display: flex; flex-direction: column; overflow: visible;
+  }
+  /* Terminal starts at wheel top; run button lands at wheel bottom. */
+  .sheet { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .resultView {
+    grid-column: 1 / -1; grid-row: 2; align-self: center;
+    max-width: 760px; width: 100%; margin: 0 auto;
+  }
 }

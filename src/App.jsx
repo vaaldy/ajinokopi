@@ -46,6 +46,7 @@ export default function App() {
   const [flavors, setFlavors] = useState(null);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
+  const [ran, setRan] = useState(false);
   // one open menu at a time: 'brews' drops the file tree, 'sys' the import/copy/export ops
   const [menu, setMenu] = useState(null);
   // which directories of the file tree are unfolded, keyed '2026', '2026-09', '2026-09-01'
@@ -66,6 +67,7 @@ export default function App() {
   }, []);
 
   const cur = store.brews.find(b => b._id === store.currentId);
+  useEffect(() => setRan(false), [cur?._id]);
 
   useLayoutEffect(() => {
     const cell = typingRef.current;
@@ -102,6 +104,10 @@ export default function App() {
   // notes logged the coffee line shows three colours, and brew reuses one of those rather than
   // bringing a fourth on screen that nothing above it matches.
   const brewCol = noteCols[TRIO.length % noteCols.length];
+  const spectrumColors = cur.notes.map(n => noteColorOf(flavors, n.category, n.note));
+  const spectrumGradient = spectrumColors.length
+    ? `linear-gradient(125deg, ${spectrumColors.join(', ')})`
+    : 'linear-gradient(125deg, #3a302b, #211b18)';
 
   // Every field is as wide as what it holds (mono, so a char count is a width; +6px is the
   // highlight's own padding) and wears its note colour once it has something to show.
@@ -236,6 +242,7 @@ export default function App() {
 
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
+      <main className={'workspace' + (ran ? ' resultMode' : '')}>
       <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
              onAdd={(category, note) =>
                updateCur(b => ({ ...b, notes: [...b.notes, { category, note, ts: new Date().toISOString() }] }))}
@@ -244,6 +251,7 @@ export default function App() {
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
           the cup is its body. Punctuation is decoration — nothing here is parsed, and every value
           is a plain input sized to what it holds. */}
+      <div className="editor">
       <div className="sheet" data-title={`~/brews/${iso(cur.createdAt)}/${slug(cur.name)}`}>
         <div className="sig">
           <span className="kw">func</span> coffee(
@@ -317,6 +325,26 @@ export default function App() {
 
         <div className="brace">{'}'}</div>
       </div>
+
+      <button className="run" onClick={() => setRan(true)}>run</button>
+      </div>
+      </main>
+      {ran && (
+        <section className="resultView">
+          <article className="shareCard" style={{ background: spectrumGradient }}>
+            <div className="shareCardShade">
+              <div className="shareCardHead">
+                <span>coffee spectrum</span><span>{iso(cur.createdAt)}</span>
+              </div>
+              <h2>{cur.name || 'Untitled brew'}</h2>
+              <p className="shareCardMeta">{[cur.process, cur.origin, cur.varietal].filter(Boolean).join(' · ') || 'unclassified coffee'}</p>
+              <p className="shareCardNotes">{cur.notes.map(n => n.note).join(' · ') || 'no notes logged'}</p>
+              {cur.remark && <p className="shareCardRemark">// {cur.remark}</p>}
+            </div>
+          </article>
+          <button className="backToCup" onClick={() => setRan(false)}>← back to wheel + terminal</button>
+        </section>
+      )}
 
     </>
   );

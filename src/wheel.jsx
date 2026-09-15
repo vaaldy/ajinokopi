@@ -241,18 +241,22 @@ export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
         const stacked = !overflow && words.length > 1;
         const lines = stacked ? words : [overflow && words.length > 1 ? words.join(' · ') : words[0]];
         const lineR = stacked ? words.map((_, w) => F.cLbl + (w - (words.length - 1) / 2) * 9) : [F.cLbl];
+        const labelGap = 1.5;
+        const arcLen = (seg.a1 - seg.a0) * Math.PI / 180 * F.cLbl;
+        const longest = Math.max(...lines.map(w => w.length));
+        const fs = Math.max(6.2, Math.min(stacked ? 8 : 10, (arcLen - 8) / (longest * 0.62)));
         return (
           <g key={seg.cat} opacity={open ? (cat === i ? 1 : 0.32) : 1} style={{ transition: 'opacity .3s' }}>
             <defs>
               {lineR.map((r, li) => (
-                <path key={li} id={`fc${i}-${li}`} d={arcPath(F.ox, F.oy, r, seg.a0, seg.a1, flip)} fill="none" />
+                <path key={li} id={`fc${i}-${li}`} d={arcPath(F.ox, F.oy, r, seg.a0 + labelGap, seg.a1 - labelGap, flip)} fill="none" />
               ))}
             </defs>
             <path d={sectorPath(F.ox, F.oy, seg.a0, seg.a1, F.cIn, F.cOut)} fill={def.color}
                   style={{ stroke: cat === i ? '#fff' : '#1c1917', strokeWidth: cat === i ? 2.2 : 0.8, cursor: 'pointer' }} />
             {lines.map((w, li) => (
               <text key={li} dominantBaseline="central"
-                    style={{ fontSize: stacked ? 8 : w.includes('·') ? 8 : 10, fill: fg, pointerEvents: 'none', letterSpacing: '0.01em' }}>
+                    style={{ fontSize: fs, fill: fg, pointerEvents: 'none', letterSpacing: '0.01em' }}>
                 <textPath href={`#fc${i}-${li}`} startOffset="50%" style={{ textAnchor: 'middle' }}>{w}</textPath>
               </text>
             ))}

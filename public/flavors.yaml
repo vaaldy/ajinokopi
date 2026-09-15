@@ -47,16 +47,6 @@ Stonefruit:
     plum: "#c9a3c4"
     cherry: "#eda3a8"
 
-Berries:
-  color: "#d6b3d0"
-  notes: [strawberry, raspberry, blueberry, blackberry, blackcurrant]
-  noteColors:
-    strawberry: "#f4a9b0"
-    raspberry: "#e79db4"
-    blueberry: "#adb8dd"
-    blackberry: "#b8a3c9"
-    blackcurrant: "#a897c0"
-
 Tropical:
   color: "#f5d9a8"
   notes: [pineapple, mango, papaya, passionfruit, lychee, banana]
@@ -79,11 +69,21 @@ Malic:
     gooseberry: "#d4e0a0"
 
 Tartaric:
-  color: "#ded0b8"
+  color: "#c5afd0"
   notes: [white grape, red grape]
   noteColors:
     white grape: "#dde8b8"
     red grape: "#d8a7ae"
+
+Berries:
+  color: "#d6b3d0"
+  notes: [strawberry, raspberry, blueberry, blackberry, blackcurrant]
+  noteColors:
+    strawberry: "#f4a9b0"
+    raspberry: "#e79db4"
+    blueberry: "#adb8dd"
+    blackberry: "#b8a3c9"
+    blackcurrant: "#a897c0"
 
 Sweet:
   color: "#e8c79a"
