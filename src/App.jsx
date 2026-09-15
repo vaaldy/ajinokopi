@@ -43,11 +43,39 @@ function brewRows(brews, open) {
 // The coffee line: one field per part, read left to right as "washed natural ethiopia".
 const TRIO = [['process', 'Process'], ['origin', 'Origin'], ['varietal', 'Varietal']];
 
+function SpectrumCard({ brew, flavors, fingerprint, compact = false }) {
+  const ring = ringOrder(Object.keys(flavors), flavors);
+  const colorOf = (category, note) => noteColorOf(flavors, category, note);
+  const fallback = fingerprintTones({ notes: brew.notes, colorOf, ringSegs: ring, cx: 195, cy: 195, r: 195 });
+  const fp = fingerprint || fallback;
+  return (
+    <article className={'shareCard' + (compact ? ' archiveCard' : '')} style={{ background: fp.baseCol }}>
+      <svg className="cardFingerprint" viewBox="0 0 390 390" preserveAspectRatio="none" aria-hidden="true">
+        <Fingerprint cx={195} cy={195} r={195} tones={fp.tones} baseCol={fp.baseCol}
+                     sat="saturate(1)" idPrefix={'cardfp-' + brew._id} decorations={false} clipDisc={false} />
+      </svg>
+      <div className="shareCardShade">
+        <div className="shareCardHead"><span className="shareCardDate">{iso(brew.createdAt)}</span></div>
+        <h2>{brew.name || 'Untitled brew'}</h2>
+        <p className="shareCardMeta">{[brew.process, brew.origin, brew.varietal].filter(Boolean).join(' · ') || 'unclassified coffee'}</p>
+        <p className="shareCardNotes">{brew.notes.map(n => n.note).join(' · ') || 'no notes logged'}</p>
+        {brew.remark && (
+          <p className="shareCardRemark">
+            {brew.remark.split('\n').map((line, i) => (
+              <Fragment key={i}>{i > 0 && <br />}{line.replace(/^\s*\/\/\s?/, '')}</Fragment>
+            ))}
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
 export default function App() {
   const [flavors, setFlavors] = useState(null);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
-  const [ran, setRan] = useState(false);
+  const [screen, setScreen] = useState('wheel'); // wheel | card | archive
   const [running, setRunning] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [wheelFingerprint, setWheelFingerprint] = useState(null);
@@ -60,6 +88,7 @@ export default function App() {
   const typingRef = useRef();
   const handleRef = useRef();
   const menuRef = useRef();
+  const screenTimer = useRef();
 
   useEffect(() => {
     fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
@@ -72,7 +101,12 @@ export default function App() {
   }, []);
 
   const cur = store.brews.find(b => b._id === store.currentId);
-  useEffect(() => { setRan(false); setWheelFingerprint(null); }, [cur?._id]);
+  const ran = screen === 'card', browsing = screen === 'archive';
+  useEffect(() => {
+    clearTimeout(screenTimer.current);
+    setScreen('wheel'); setWheelFingerprint(null);
+  }, [cur?._id]);
+  useEffect(() => () => clearTimeout(screenTimer.current), []);
   useEffect(() => {
     if (menu === 'brews') menuRef.current?.querySelector('.current-date')?.scrollIntoView({ block: 'nearest' });
   }, [menu, cur?.createdAt]);
@@ -118,29 +152,8 @@ export default function App() {
     notes: cur.notes, colorOf: cardColorOf, ringSegs: cardRing, cx: 195, cy: 195, r: 195,
   });
   const activeFingerprint = wheelFingerprint || { tones: cardTones, baseCol: cardBase };
-  const spectrumCard = (
-    <article className="shareCard" style={{ background: activeFingerprint.baseCol }}>
-      <svg className="cardFingerprint" viewBox="0 0 390 390" preserveAspectRatio="none" aria-hidden="true">
-        <Fingerprint cx={195} cy={195} r={195} tones={activeFingerprint.tones} baseCol={activeFingerprint.baseCol}
-                     sat="saturate(1)" idPrefix="cardfp" decorations={false} clipDisc={false} />
-      </svg>
-      <div className="shareCardShade">
-        <div className="shareCardHead">
-          <span className="shareCardDate">{iso(cur.createdAt)}</span>
-        </div>
-        <h2>{cur.name || 'Untitled brew'}</h2>
-        <p className="shareCardMeta">{[cur.process, cur.origin, cur.varietal].filter(Boolean).join(' · ') || 'unclassified coffee'}</p>
-        <p className="shareCardNotes">{cur.notes.map(n => n.note).join(' · ') || 'no notes logged'}</p>
-        {cur.remark && (
-          <p className="shareCardRemark">
-            {cur.remark.split('\n').map((line, i) => (
-              <Fragment key={i}>{i > 0 && <br />}{line.replace(/^\s*\/\/\s?/, '')}</Fragment>
-            ))}
-          </p>
-        )}
-      </div>
-    </article>
-  );
+  const spectrumCard = <SpectrumCard brew={cur} flavors={flavors} fingerprint={activeFingerprint} />;
+  const sortedBrews = [...store.brews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   // Every field is as wide as what it holds (mono, so a char count is a width; +6px is the
   // highlight's own padding) and wears its note colour once it has something to show.
@@ -213,7 +226,8 @@ export default function App() {
     <>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
-      <div className="pane">
+      <div className={'pane' + (browsing ? ' browsing' : '')}>
+        {browsing && <button className="archivePaneBack" onClick={() => setScreen('wheel')}>&lt; back to wheel + terminal</button>}
         {/* the session block doubles as the system menu: tap it for the ops that act on the
             whole store rather than on one cup */}
         <button className="app act" aria-label="System menu" aria-expanded={menu === 'sys'}
@@ -277,7 +291,7 @@ export default function App() {
 
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
-      <main className={'workspace' + (ran ? ' resultMode' : '')}>
+      <main className={'workspace' + (ran ? ' resultMode' : '') + (browsing ? ' browsing' : '')}>
       <section className="wheelStage">
         <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
                runAway={running} returning={restoring}
@@ -295,6 +309,11 @@ export default function App() {
                onRemove={i => updateCur(b => ({ ...b, notes: b.notes.filter((_, j) => j !== i) }))} />
         {running && <div className="runCardOverlay">{spectrumCard}</div>}
         {ran && <div className="runCardOverlay finalCardOverlay">{spectrumCard}</div>}
+        {browsing && (
+          <div className="archiveOverlay">
+            {sortedBrews.map(b => <SpectrumCard key={b._id} brew={b} flavors={flavors} compact />)}
+          </div>
+        )}
       </section>
 
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
@@ -375,14 +394,24 @@ export default function App() {
         <div className="brace">{'}'}</div>
       </div>
 
-      <button className={'run' + (ran ? ' edit' : '')} onClick={() => {
-        if (ran) {
-          setRan(false); setRestoring(true);
-          setTimeout(() => setRestoring(false), 650);
-        } else {
-          setRunning(true); setTimeout(() => { setRunning(false); setRan(true); }, 650);
-        }
-      }}>{ran ? 'edit' : running ? 'running...' : 'run'}</button>
+      <div className="editorActions">
+        <button className="browseBrews" onClick={() => {
+          clearTimeout(screenTimer.current);
+          if (browsing) setScreen('wheel');
+          else { setScreen('archive'); setRunning(false); }
+        }}>&lt; list of brews</button>
+        <button className={'run' + (ran ? ' edit' : '')} onClick={() => {
+          if (ran) {
+            clearTimeout(screenTimer.current);
+            setScreen('wheel'); setRestoring(true);
+            screenTimer.current = setTimeout(() => setRestoring(false), 650);
+          } else {
+            clearTimeout(screenTimer.current);
+            setScreen('wheel'); setRunning(true);
+            screenTimer.current = setTimeout(() => { setRunning(false); setScreen('card'); }, 650);
+          }
+        }}>{ran ? 'edit' : running ? 'running...' : 'run'}</button>
+      </div>
       </div>
       </main>
     </>
