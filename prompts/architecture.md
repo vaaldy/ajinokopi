@@ -3,7 +3,11 @@
 React + Vite mobile web app. No backend. Pure logic sits apart from components, stays Node-testable.
 
 ```
-README.md             — human entry point: run locally, how the release pipeline flows
+AGENTS.md             — agent entry point; only Markdown kept at repository root
+prompts/README.md     — human entry point: run locally, how release pipeline flows
+prompts/architecture.md — this codebase map
+prompts/status.md     — release state and open work
+prompts/*.md          — tracked contributor docs and frozen release inputs
 index.html            — Vite entry (#root + script tag + two Google fonts)
 src/main.jsx          — mounts <App/>, imports styles.css
 src/App.jsx           — screen: title, <Wheel/>, cupping sheet, brew management
