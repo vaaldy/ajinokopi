@@ -118,7 +118,7 @@ body {
 .finalCardOverlay .shareCard { animation: none; }
 .archiveOverlay {
   position: fixed; top: calc(env(safe-area-inset-top, 0px) + 36px); right: 0; bottom: 0; left: 0;
-  z-index: 3; overflow-y: auto; padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 3; overflow-y: auto; padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 68px);
   scroll-padding-top: 12px;
   background: #16120f; overscroll-behavior: contain; touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
