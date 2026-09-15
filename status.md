@@ -18,6 +18,7 @@ Esc closes menus, auto-growing remarks, Malic family (in progress — push to de
 v0.3.4-dev.1 = revised seed flavor taxonomy: Tartaric grapes, Sweet monk fruit/stevia, Herbal / Tea outer band (planned)
 v0.3.4-dev.4 = run-to-card view, newest-first brew archive, live fingerprint card rendering (done)
 v0.3.4-dev.6 = archive header and iPhone viewport/toolbar fixes (done)
+v0.3.4-dev.7 = archive rebuilt as header + full-height scrollable main screen (done)
 
 ## Open
 

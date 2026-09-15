@@ -231,7 +231,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <div className={'appShell' + (browsing ? ' archiveMode' : '')}>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
       <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || browsing) ? ' overlayScreen' : '')}>
@@ -302,7 +302,12 @@ export default function App() {
 
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
-      <main className={'workspace' + (ran ? ' resultMode' : '') + (running ? ' running' : '') + (browsing ? ' browsing' : '')}>
+      {browsing ? (
+        <main className="archiveScreen">
+          {sortedBrews.map(b => <SpectrumCard key={b._id} brew={b} flavors={flavors} compact />)}
+        </main>
+      ) : (
+      <main className={'workspace' + (ran ? ' resultMode' : '') + (running ? ' running' : '')}>
       <section className="wheelStage">
         <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
                runAway={running} returning={restoring}
@@ -320,11 +325,6 @@ export default function App() {
                onRemove={i => updateCur(b => ({ ...b, notes: b.notes.filter((_, j) => j !== i) }))} />
         {running && <div className="runCardOverlay">{spectrumCard}</div>}
         {ran && <div className="runCardOverlay finalCardOverlay">{spectrumCard}</div>}
-        {browsing && (
-          <div className="archiveOverlay">
-            {sortedBrews.map(b => <SpectrumCard key={b._id} brew={b} flavors={flavors} compact />)}
-          </div>
-        )}
       </section>
 
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
@@ -427,6 +427,7 @@ export default function App() {
       </div>
       </div>
       </main>
-    </>
+      )}
+    </div>
   );
 }

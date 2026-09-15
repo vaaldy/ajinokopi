@@ -11,9 +11,14 @@ body {
 /* Plain stack of full-width strips: topbar, wheel, notes. Nothing clever — every strip is a
    block that owns its own background and padding. Bottom padding clears Safari's floating bar,
    whose height is not in env(safe-area-inset-bottom). */
-#root {
+#root { min-height: 100dvh; }
+.appShell {
   display: flex; flex-direction: column; min-height: 100dvh;
   padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom, 0px) + 56px);
+}
+.appShell.archiveMode {
+  height: 100dvh; min-height: 0; overflow: hidden;
+  padding-bottom: 0;
 }
 
 /* ---------- topbar ---------- */
@@ -116,10 +121,9 @@ body {
 .runCardOverlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: flex; justify-content: center; }
 .runCardOverlay .shareCard { animation: cardExpand .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: center; }
 .finalCardOverlay .shareCard { animation: none; }
-.archiveOverlay {
-  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 36px); right: 0; bottom: 0; left: 0;
-  z-index: 3; overflow-y: auto; padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 68px);
-  scroll-padding-top: 12px;
+.archiveScreen {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 68px);
   background: #16120f; overscroll-behavior: contain; touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
@@ -132,10 +136,6 @@ body {
   font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
 }
 .archiveBack:active { color: #f0e9e2; }
-.workspace.browsing { flex: 1 1 auto; min-height: 0; }
-.workspace.browsing .editor { display: none; }
-.workspace.browsing .wheelStage { width: 100%; height: 100%; aspect-ratio: auto; }
-.workspace.browsing .wheelStage > .wheel { visibility: hidden; }
 @keyframes cardExpand {
   0% { opacity: 0; transform: scale(.18); }
   100% { opacity: 1; transform: scale(1); }
@@ -265,7 +265,7 @@ body {
   /* Grid, not flex-wrap: the content row takes all leftover height (1fr), so the wheel can
      centre in it and the sheet can sink to the bottom — flex lines can't do per-item vertical
      placement without a wrapper div. */
-  #root {
+  .appShell {
     display: grid;
     grid-template-columns: auto minmax(340px, 1fr);
     grid-template-rows: auto 1fr;
@@ -284,7 +284,7 @@ body {
     display: grid; grid-template-columns: auto minmax(340px, 1fr);
   }
   .workspace > .wheelStage { grid-column: 1; grid-row: 1; }
-  .workspace.browsing .wheelStage { grid-column: 1 / -1; width: 100%; height: 100%; aspect-ratio: auto; }
+  .archiveScreen { grid-column: 1 / -1; grid-row: 2; }
   .wheelStage {
     width: var(--wheel-size); height: var(--wheel-size); aspect-ratio: auto; margin-inline: 0;
   }
