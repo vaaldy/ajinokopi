@@ -23,6 +23,9 @@ v0.3.4-dev.7 = archive rebuilt as header + full-height scrollable main screen (d
 ## Open
 
 Next, version not picked yet:
+- Double-tap or long-press archive card to open its brew; play gradient transition into selected coffee.
+- Scaffold reusable card-gradient animation system.
+- Simple login.
 - Swipe left/right between wheel + terminal and card/archive screens; replace button-only navigation.
 - Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Camera logging — snap photo as part of brew record.
