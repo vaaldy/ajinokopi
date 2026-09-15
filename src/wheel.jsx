@@ -318,7 +318,7 @@ export function Wheel({ flavors, notes, intensity, onAdd, onRemove }) {
   // ---- the pill orbit: logged notes, draggable around the rim, tap to delete ----
   const nextRing = {};
   const orbit = (
-    <g style={{ filter: sat }}>
+    <g>
       {pills.map(p => {
         const pad = 1.4, mid = p.a0 + (p.a1 - p.a0) / 2;
         const [pcx, pcy] = polar(F.ox, F.oy, p.rMid, mid);
