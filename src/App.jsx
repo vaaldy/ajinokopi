@@ -55,6 +55,7 @@ export default function App() {
   const fileRef = useRef();
   const typingRef = useRef();
   const handleRef = useRef();
+  const menuRef = useRef();
 
   useEffect(() => {
     fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
@@ -68,6 +69,9 @@ export default function App() {
 
   const cur = store.brews.find(b => b._id === store.currentId);
   useEffect(() => setRan(false), [cur?._id]);
+  useEffect(() => {
+    if (menu === 'brews') menuRef.current?.querySelector('.current-date')?.scrollIntoView({ block: 'nearest' });
+  }, [menu, cur?.createdAt]);
 
   useLayoutEffect(() => {
     const cell = typingRef.current;
@@ -115,6 +119,15 @@ export default function App() {
     width: `calc(${Math.max(1, (v || ph).length)}ch + 6px)`,
     ...(v && col && { background: col, color: ink(col) }),
   });
+
+  const toggleBrews = () => {
+    const opening = menu !== 'brews';
+    if (opening) {
+      const [y, m, d] = iso(cur.createdAt).split('-');
+      setOpen({ [y]: true, [`${y}-${m}`]: true, [`${y}-${m}-${d}`]: true });
+    }
+    setMenu(opening ? 'brews' : null);
+  };
 
   const rmBrew = () => {
     // native confirm: one mistap here erases a cup's notes, and the fiction does not get to
@@ -176,7 +189,9 @@ export default function App() {
             whole store rather than on one cup */}
         <button className="app act" aria-label="System menu" aria-expanded={menu === 'sys'}
                 onClick={() => setMenu(m => (m === 'sys' ? null : 'sys'))}>/</button>
-        <span className="punc">{iso(cur.createdAt)}/</span>
+        <button className="datePicker punc" aria-label="Open date explorer" onClick={toggleBrews}>
+          {iso(cur.createdAt)}/
+        </button>
         {/* contenteditable, not an <input>: keeps the filename editable without React resetting
             the caret on every keystroke. The topbar stays one line; long names get a compact class.
             Uncontrolled on purpose (keyed by brew, ref sets initial text). */}
@@ -195,21 +210,12 @@ export default function App() {
         {/* our own menu, not a <select>: the popup a select opens is OS-rendered and CSS cannot
             reach it, and this one should read as a completion list dropping out of the bar */}
         <button className="picker" aria-label="Open brew" aria-expanded={menu === 'brews'}
-                onClick={() => {
-                  const opening = menu !== 'brews';
-                  // opening always lands you where you are: the current brew's path unfolded,
-                  // every other branch collapsed
-                  if (opening) {
-                    const [y, m, d] = iso(cur.createdAt).split('-');
-                    setOpen({ [y]: true, [`${y}-${m}`]: true, [`${y}-${m}-${d}`]: true });
-                  }
-                  setMenu(opening ? 'brews' : null);
-                }}>{'\u25be'}</button>
+                onClick={toggleBrews}>{'\u25be'}</button>
         {/* same action as "+ new file..." in the tree, one tap instead of two */}
         <button className="picker" aria-label="New brew"
                 onClick={() => { newBrew(); setMenu(null); }}>+</button>
         {menu === 'brews' && (
-          <div className="menu" role="listbox">
+          <div className="menu" role="listbox" ref={menuRef}>
             {brewRows(store.brews, open).map(r =>
               r.b ? (
                 <button key={r.b._id} role="option" aria-selected={r.b._id === store.currentId}
@@ -219,7 +225,7 @@ export default function App() {
                   {slug(r.b.name)}
                 </button>
               ) : (
-                <button key={r.k} className="row"
+                <button key={r.k} className={'row' + (r.k === iso(cur.createdAt) ? ' current-date' : '')}
                         style={{ paddingLeft: `calc(14px + ${r.lvl * 2}ch)` }}
                         onClick={() => setOpen(o => ({ ...o, [r.k]: !o[r.k] }))}>
                   {r.label}{open[r.k] ? '' : ' \u25b8'}
