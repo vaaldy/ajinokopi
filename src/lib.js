@@ -136,22 +136,12 @@ export function noteColorOf(flavors, cat, note) {
 }
 
 // ---------- wheel layout ----------
-// Ring order weighted by "power": families with more notes need more vertical room, so the
-// biggest ones take the slots whose leading edge sits nearest the vertical (bearing 0°/180°),
-// where a portrait screen has the most headroom; the smallest fall to the left/right bands.
-export function ringOrder(catNames, flavors, rot = 32) {
+// Families keep YAML order. `rot` shifts the complete ring without changing that order.
+export function ringOrder(catNames, _flavors, rot = 210) {
   const n = catNames.length, sweep = 360 / n;
-  const slots = catNames.map((_, i) => {
-    const mid = norm(-sweep / 2 + i * sweep + rot);
-    const distTo = t => Math.min(Math.abs(mid - t), 360 - Math.abs(mid - t));
-    return { i, priority: Math.min(distTo(0), distTo(180)) }; // smaller = closer to top/bottom
-  }).sort((a, b) => a.priority - b.priority);
-  const byPower = [...catNames].sort((a, b) => flavors[b].notes.length - flavors[a].notes.length);
-  const catAtSlot = new Array(n);
-  slots.forEach((s, rank) => { catAtSlot[s.i] = byPower[rank]; });
-  return catAtSlot.map((c, i) => {
+  return catNames.map((cat, i) => {
     const a0 = -sweep / 2 + i * sweep + rot;
-    return { cat: c, a0, a1: a0 + sweep, mid: a0 + sweep / 2 };
+    return { cat, a0, a1: a0 + sweep, mid: a0 + sweep / 2 };
   });
 }
 

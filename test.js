@@ -50,11 +50,9 @@ const FLAVORS = {
 const ring = ringOrder(Object.keys(FLAVORS), FLAVORS);
 t('ringOrder: one segment per family, seams meet', ring.length === 3 && ring.every(s => Math.abs((s.a1 - s.a0) - 120) < 1e-9));
 t('ringOrder: mid is the segment centre', ring.every(s => s.mid === (s.a0 + s.a1) / 2));
-const vertical = s => Math.min(angDist(s.a0, 0), angDist(s.a0, 180)); // slots rank by leading edge
-t('ringOrder: the biggest family takes the slot nearest the vertical',
-  ring.reduce((best, s) => (vertical(s) < vertical(best) ? s : best)).cat === 'Big');
-t('ringOrder: the smallest family takes the slot furthest from it',
-  ring.reduce((worst, s) => (vertical(s) > vertical(worst) ? s : worst)).cat === 'Small');
+t('ringOrder: preserves YAML family order', ring.map(s => s.cat).join() === 'Big,Mid,Small');
+t('ringOrder: rotation shifts every family by the same amount',
+  ringOrder(Object.keys(FLAVORS), FLAVORS, 0).every((s, i) => s.a0 === ring[i].a0 - 210));
 t('ringOrder: stable for the same input', JSON.stringify(ringOrder(Object.keys(FLAVORS), FLAVORS)) === JSON.stringify(ring));
 
 const groups = radialGroups(FLAVORS.Big, 132, 178);
