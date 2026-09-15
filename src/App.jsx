@@ -249,10 +249,26 @@ export default function App() {
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
       <main className={'workspace' + (ran ? ' resultMode' : '')}>
-      <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
-             onAdd={(category, note) =>
-               updateCur(b => ({ ...b, notes: [...b.notes, { category, note, ts: new Date().toISOString() }] }))}
-             onRemove={i => updateCur(b => ({ ...b, notes: b.notes.filter((_, j) => j !== i) }))} />
+      <section className="wheelStage">
+      {ran ? (
+          <article className="shareCard" style={{ background: spectrumGradient }}>
+            <div className="shareCardShade">
+              <div className="shareCardHead">
+                <span>coffee spectrum</span><span>{iso(cur.createdAt)}</span>
+              </div>
+              <h2>{cur.name || 'Untitled brew'}</h2>
+              <p className="shareCardMeta">{[cur.process, cur.origin, cur.varietal].filter(Boolean).join(' · ') || 'unclassified coffee'}</p>
+              <p className="shareCardNotes">{cur.notes.map(n => n.note).join(' · ') || 'no notes logged'}</p>
+              {cur.remark && <p className="shareCardRemark">// {cur.remark}</p>}
+            </div>
+          </article>
+      ) : (
+        <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
+               onAdd={(category, note) =>
+                 updateCur(b => ({ ...b, notes: [...b.notes, { category, note, ts: new Date().toISOString() }] }))}
+               onRemove={i => updateCur(b => ({ ...b, notes: b.notes.filter((_, j) => j !== i) }))} />
+      )}
+      </section>
 
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
           the cup is its body. Punctuation is decoration — nothing here is parsed, and every value
@@ -332,26 +348,9 @@ export default function App() {
         <div className="brace">{'}'}</div>
       </div>
 
-      <button className="run" onClick={() => setRan(true)}>run</button>
+      <button className={'run' + (ran ? ' edit' : '')} onClick={() => setRan(v => !v)}>{ran ? 'edit' : 'run'}</button>
       </div>
       </main>
-      {ran && (
-        <section className="resultView">
-          <article className="shareCard" style={{ background: spectrumGradient }}>
-            <div className="shareCardShade">
-              <div className="shareCardHead">
-                <span>coffee spectrum</span><span>{iso(cur.createdAt)}</span>
-              </div>
-              <h2>{cur.name || 'Untitled brew'}</h2>
-              <p className="shareCardMeta">{[cur.process, cur.origin, cur.varietal].filter(Boolean).join(' · ') || 'unclassified coffee'}</p>
-              <p className="shareCardNotes">{cur.notes.map(n => n.note).join(' · ') || 'no notes logged'}</p>
-              {cur.remark && <p className="shareCardRemark">// {cur.remark}</p>}
-            </div>
-          </article>
-          <button className="backToCup" onClick={() => setRan(false)}>← back to wheel + terminal</button>
-        </section>
-      )}
-
     </>
   );
 }

@@ -103,8 +103,14 @@ body {
 /* The notes are a terminal window: darker pane than the page, its own titlebar strip on top.
    Fill and contrast do the framing, same as the topbar — no border, terminals don't draw rules. */
 .workspace { min-width: 0; }
-.resultMode .wheel, .resultMode .editor { display: none; }
-.resultView { padding: 12px 10px 0; }
+.wheelStage {
+  width: min(100%, max(393px, 100dvh - 560px)); aspect-ratio: 1;
+  min-width: 0; margin-inline: auto;
+  display: flex; align-items: center; justify-content: center;
+}
+.wheelStage .shareCard {
+  width: calc(100% - 20px); height: calc(100% - 12px); margin: 12px 10px 0;
+}
 .backToCup {
   display: block; margin: 12px 0 0 auto; padding: 8px 14px;
   border: 0; border-radius: 4px; background: #241f1d; color: #e7e0d8;
@@ -123,11 +129,13 @@ body {
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace; text-align: left;
 }
 .run:active { background: #d4e8bd; }
+.run.edit { background: #d9a066; }
+.run.edit:active { background: #f0e9e2; }
 .shareCard {
   margin: 12px 10px 0; border-radius: 6px; color: #fff;
   font: 500 15px/1.5 'JetBrains Mono', ui-monospace, monospace;
 }
-.shareCardShade { min-height: 180px; padding: 14px; border-radius: inherit; background: rgba(20, 15, 13, .48); }
+.shareCardShade { height: 100%; min-height: 180px; padding: 14px; border-radius: inherit; background: rgba(20, 15, 13, .48); }
 .shareCardHead { display: flex; justify-content: space-between; gap: 1ch; color: rgba(255,255,255,.72); font-size: 11px; text-transform: uppercase; }
 .shareCard h2 { margin: 28px 0 4px; font: 600 22px/1.15 system-ui, sans-serif; }
 .shareCard p { margin-top: 8px; }
@@ -218,16 +226,19 @@ body {
     grid-column: 1 / -1; grid-row: 2; min-height: 0;
     display: grid; grid-template-columns: auto minmax(340px, 1fr);
   }
-  .workspace > .wheel { grid-column: 1; grid-row: 1; }
+  .workspace > .wheelStage { grid-column: 1; grid-row: 1; }
+  .wheelStage {
+    width: var(--wheel-size); height: var(--wheel-size); aspect-ratio: auto; margin-inline: 0;
+  }
+  .wheelStage .shareCard { height: calc(100% - 12px); margin: 12px 10px 0; }
   .editor {
-    grid-column: 2; grid-row: 1; align-self: center; min-height: 0;
-    height: var(--wheel-size); position: relative;
+    grid-column: 2; grid-row: 1; align-self: start; min-height: 0;
+    height: auto; position: relative;
     display: flex; flex-direction: column; overflow: visible;
   }
   /* Terminal starts at wheel top; run button lands at wheel bottom. */
-  .sheet { flex: 1 1 auto; min-height: 0; overflow: auto; }
-  .resultView {
-    grid-column: 1 / -1; grid-row: 2; align-self: center;
-    max-width: 760px; width: 100%; margin: 0 auto;
+  .sheet {
+    flex: 0 0 calc(var(--wheel-size) - 12px); height: calc(var(--wheel-size) - 12px);
+    min-height: 0; margin-top: 12px; overflow: auto;
   }
 }
