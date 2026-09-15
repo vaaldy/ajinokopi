@@ -110,6 +110,14 @@ export default function App() {
   useEffect(() => {
     if (menu === 'brews') menuRef.current?.querySelector('.current-date')?.scrollIntoView({ block: 'nearest' });
   }, [menu, cur?.createdAt]);
+  useLayoutEffect(() => {
+    if (!browsing) return undefined;
+    document.activeElement?.blur();
+    window.scrollTo(0, 0);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflow; };
+  }, [browsing]);
 
   useLayoutEffect(() => {
     const cell = typingRef.current;
@@ -226,8 +234,10 @@ export default function App() {
     <>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
-      <div className={'pane' + (browsing ? ' browsing' : '')}>
-        {browsing && <button className="archivePaneBack" onClick={() => setScreen('wheel')}>&lt; back to wheel + terminal</button>}
+      <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || browsing) ? ' overlayScreen' : '')}>
+        {browsing ? (
+          <button className="archivePaneBack" onClick={() => setScreen('wheel')}>&lt; back to wheel + terminal</button>
+        ) : <>
         {/* the session block doubles as the system menu: tap it for the ops that act on the
             whole store rather than on one cup */}
         <button className="app act" aria-label="System menu" aria-expanded={menu === 'sys'}
@@ -287,11 +297,12 @@ export default function App() {
             <button className="row rm" onClick={rmBrew}>rm {slug(cur.name)}</button>
           </div>
         )}
-      </div>
+        </>}
+      </header>
 
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
-      <main className={'workspace' + (ran ? ' resultMode' : '') + (browsing ? ' browsing' : '')}>
+      <main className={'workspace' + (ran ? ' resultMode' : '') + (running ? ' running' : '') + (browsing ? ' browsing' : '')}>
       <section className="wheelStage">
         <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
                runAway={running} returning={restoring}
@@ -407,6 +418,8 @@ export default function App() {
             screenTimer.current = setTimeout(() => setRestoring(false), 650);
           } else {
             clearTimeout(screenTimer.current);
+            document.activeElement?.blur();
+            window.scrollTo(0, 0);
             setScreen('wheel'); setRunning(true);
             screenTimer.current = setTimeout(() => { setRunning(false); setScreen('card'); }, 650);
           }

@@ -16,10 +16,12 @@ eased falloff, pre-mixed toward blend, glint removed), wide/landscape grid layou
 terminal full-height right), portrait wheel height cap, topbar `+` new brew, fat-finger padding,
 Esc closes menus, auto-growing remarks, Malic family (in progress — push to deploy)
 v0.3.4-dev.1 = revised seed flavor taxonomy: Tartaric grapes, Sweet monk fruit/stevia, Herbal / Tea outer band (planned)
+v0.3.4-dev.4 = run-to-card view, newest-first brew archive, live fingerprint card rendering (done)
 
 ## Open
 
 Next, version not picked yet:
+- Swipe left/right between wheel + terminal and card/archive screens; replace button-only navigation.
 - Customizable taste notes: user edits tier 1 families and tier 2 notes, not only `flavors.yaml` by hand.
 - Camera logging — snap photo as part of brew record.
 - Text parsing from coffee bag label — photo or camera text into brew fields (origin, process, varietal).

@@ -19,7 +19,7 @@ body {
 /* ---------- topbar ---------- */
 /* One compact row: the filename gets smaller and clips rather than growing the bar. */
 .pane {
-  position: sticky; top: 0; z-index: 2;
+  position: sticky; top: 0; z-index: 2; min-height: 36px;
   display: flex; align-items: center; white-space: nowrap; gap: 0 1ch; padding: 5px 14px;
   background: #241f1d; color: #e7e0d8;
   /* Keep the controls at 16px for mobile; the filename is deliberately smaller below so the
@@ -29,7 +29,7 @@ body {
 .typing {
   flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
 }
-.typing.compact { font-size: 12px; line-height: 1.35; }
+.typing.compact { line-height: 1.35; }
 .handle { display: inline-block; vertical-align: bottom; outline: none; }
 .picker { align-self: center; }
 .app { background: #d9a066; color: #1c1917; padding: 1px 1ch; }
@@ -103,6 +103,8 @@ body {
 /* The notes are a terminal window: darker pane than the page, its own titlebar strip on top.
    Fill and contrast do the framing, same as the topbar — no border, terminals don't draw rules. */
 .workspace { min-width: 0; }
+.workspace.resultMode .wheelStage > .wheel,
+.workspace.running .wheelStage > .wheel { pointer-events: none; }
 .wheelStage {
   width: min(100%, max(393px, 100dvh - 560px)); aspect-ratio: 1;
   min-width: 0; margin-inline: auto; position: relative;
@@ -115,7 +117,9 @@ body {
 .runCardOverlay .shareCard { animation: cardExpand .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: center; }
 .finalCardOverlay .shareCard { animation: none; }
 .archiveOverlay {
-  position: absolute; inset: 0; z-index: 3; overflow-y: auto; padding: 12px 10px;
+  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 36px); right: 0; bottom: 0; left: 0;
+  z-index: 3; overflow-y: auto; padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  scroll-padding-top: 12px;
   background: #16120f; overscroll-behavior: contain; touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
@@ -128,11 +132,10 @@ body {
   font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
 }
 .archiveBack:active { color: #f0e9e2; }
-.workspace.browsing { min-height: calc(100dvh - 48px); }
+.workspace.browsing { flex: 1 1 auto; min-height: 0; }
 .workspace.browsing .editor { display: none; }
-.workspace.browsing .wheelStage {
-  width: 100%; height: calc(100dvh - 48px); aspect-ratio: auto;
-}
+.workspace.browsing .wheelStage { width: 100%; height: 100%; aspect-ratio: auto; }
+.workspace.browsing .wheelStage > .wheel { visibility: hidden; }
 @keyframes cardExpand {
   0% { opacity: 0; transform: scale(.18); }
   100% { opacity: 1; transform: scale(1); }
@@ -187,7 +190,7 @@ body {
 .shareCardNotes { font-size: 13px; color: #574d46; }
 .shareCardRemark {
   white-space: pre-wrap; color: #574d46;
-  font: 400 15px/23px 'JetBrains Mono', ui-monospace, monospace;
+  font: 400 16px/25px 'JetBrains Mono', ui-monospace, monospace;
 }
 .sheet::before {
   content: attr(data-title);  /* the open file's own path, stamped by <App> */
@@ -198,9 +201,10 @@ body {
 .kw { color: #d9a066; }
 .punc { color: #574d46; }        /* commas, semicolons — structure, not content */
 .datePicker { border: 0; padding: 0; background: none; font: inherit; cursor: pointer; }
-.pane.browsing > *:not(.archivePaneBack) { display: none; }
+.pane.overlayScreen { z-index: 5; }
+.pane.browsing { position: sticky; top: 0; z-index: 5; flex: 0 0 auto; }
 .archivePaneBack {
-  display: block; border: 0; padding: 1px 0; background: none; color: #e7e0d8;
+  display: block; width: 100%; border: 0; padding: 1px 0; background: none; color: #e7e0d8;
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace; cursor: pointer;
 }
 .archivePaneBack:active { color: #d9a066; }
@@ -246,8 +250,8 @@ body {
   /* resize: none — height follows content automatically now, the drag handle fought it */
   width: 100%; resize: none; overflow: hidden; padding: 0 0 0 3ch; color: #8d8177;
   background: none; border: 0; outline: none;
-  font: 400 15px/23px 'JetBrains Mono', ui-monospace, monospace;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='23'%3E%3Ctext x='0' y='17' font-family='monospace' font-size='15' fill='%23574d46'%3E//%3C/text%3E%3C/svg%3E") repeat-y left top;
+  font: 400 16px/25px 'JetBrains Mono', ui-monospace, monospace;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='25'%3E%3Ctext x='0' y='18' font-family='monospace' font-size='16' fill='%23574d46'%3E//%3C/text%3E%3C/svg%3E") repeat-y left top;
 }
 .remark textarea::placeholder { color: #4a4038; }
 

@@ -18,8 +18,9 @@ test.js               — pure-function checks against src/lib.js (`pnpm test`, 
 ```
 
 ## Screen
-Whole screen = one terminal. Stack of full-width strips: topbar, wheel, notes window. All chrome
-mono; frames drawn with fill + spacing, never border rules.
+Primary screen = one terminal. Stack of full-width strips: topbar, wheel, notes window, run controls.
+Run swaps wheel for brew card while preserving mounted wheel state. Brew archive replaces workspace
+with scrollable newest-first cards. All chrome mono; frames drawn with fill + spacing, never border rules.
 
 ```
 ▐brews/▌ 2026-09-01/jairo-strawberry█ ▾     ← topbar: sys menu · path (name editable) · file tree
@@ -96,7 +97,7 @@ how far pill labels shrank to fit.
 - **Saturation applies per layer, never once around whole wheel.** A CSS `filter` forces its entire subtree into one offscreen buffer, so a single `saturate()` wrapper welded tier 1, tier 2, pills and hub into one raster unit: anything moving re-rasterised all of it, *through* hub blur + `feTurbulence` grain. Tier 1, tier 2, orbit, fingerprint now each carry their own `filter: sat`, rasterise independently.
 - Hub tone circles are radial gradients already fading to `stopOpacity 0`, so `feGaussianBlur` over them bought very little — and its `<animateTransform repeatCount="indefinite">` drift meant that blur re-ran every frame, forever, over a filter region 16× disc area. Filter gone. Softness comes from the gradients.
 - **src/wheel.jsx — `<Fingerprint>`**: the hub. One radial gradient per tone over a base coat, clipped to disc, grain wash + vignette on top. Drift uses SVG `<animateTransform>`, not CSS transform, which would escape the clip in some renderers. Tone circles oversized (2.4× share radius) so gradient's zero-edge lands outside clipped disc — only smooth interior falloff visible, never circle rim (zen-browser trick); ramp 5 eased stops, near-gaussian. Old white glint blobs removed — read as hard white spots once blur died.
-- **src/App.jsx — `<App>`**: state = `flavors` (fetched yaml) + `store` ({brews, currentId}, persisted via effect) + `menu` (which topbar menu open, one at a time) + `open` (file-tree fold state, throwaway). `<Wheel>` keyed by brew id, so switching cups resets wheel transient state. `brewRows` flattens brews into indented tree rows (year > month > day, newest first) at render time.
+- **src/App.jsx — `<App>`**: state = `flavors` (fetched yaml) + `store` ({brews, currentId}, persisted via effect) + `screen` (`wheel`, `card`, `archive`) + transient menus. `<Wheel>` keyed by brew id, so switching cups resets wheel transient state; card mode overlays it instead of unmounting it, preserving pill bearings and tone shares across edit/run. `SpectrumCard` reuses live fingerprint tones for current brew and computed tones for archived brews. Archive uses real conditional header, fixed viewport list, body scroll lock, newest-first cards.
 - **Identity is `_id`, never the name.** Rename = edit the path in place; selection, merge and delete all key by `_id`, so two brews may share a name. `rm` guards with native `confirm`, falls to first remaining brew, recreates `Untitled brew` when the store empties.
 - **Topbar name is contenteditable, not `<input>`**: inputs are single-line by spec, so a long name could only scroll or push the row — contenteditable wraps and the whole bar grows taller. Uncontrolled on purpose (keyed by brew id, ref seeds text): feeding keystrokes back through React resets the caret to the start.
 - **Menus are custom, not `<select>`**: OS renders a select's popup, CSS cannot reach it. Both menus anchor `position: absolute; top: 100%` to the sticky (hence positioned) pane.
