@@ -6,7 +6,7 @@ import {
   ringOrder, radialGroups, noteFan, wheelGeom, viewBoxFor, hitWheel,
   layoutPills, layoutWheel, dragPillAngle, fingerprintTones, mixWeightFor,
   uuid, validateBrews, newBrewDoc, fillBrew, mergeBrews, defaultScores, noteColorOf, UNKNOWN_COLOR,
-  toRgb, mixColors,
+  validateFlavorTree, validateFlavorProfile, DEFAULT_FLAVOR_PROFILE_ID, toRgb, mixColors,
 } from './src/lib.js';
 
 const results = [];
@@ -40,6 +40,19 @@ t('colorMapper: unauthored note falls back to a shade', colorMapper.note('Citrus
 t('noteColors: one colour per note', noteColors('Citrus', citrus).length === 2);
 t('noteColorOf: resolves a known note', noteColorOf({ Citrus: citrus }, 'Citrus', 'lemon') === '#f7e79a');
 t('noteColorOf: a family flavors.yaml dropped still gets a colour', noteColorOf({}, 'Spice', 'clove') === UNKNOWN_COLOR);
+
+const flavorTree = {
+  Floral: { color: '#f0e7dc', notes: ['jasmine', 'rose'] },
+  Sweet: { color: '#e8c79a', notes: ['honey', 'caramel'], groups: [1, 1] },
+};
+t('flavor profiles: default keeps a stable bundled id', DEFAULT_FLAVOR_PROFILE_ID === 'bundled:default');
+t('validateFlavorTree: accepts families, notes and matching groups', validateFlavorTree(flavorTree));
+t('validateFlavorTree: rejects invalid family colour', !validateFlavorTree({ F: { color: 'red', notes: ['a'] } }));
+t('validateFlavorTree: rejects duplicate notes', !validateFlavorTree({ F: { color: '#ffffff', notes: ['a', 'a'] } }));
+t('validateFlavorTree: rejects mismatched groups', !validateFlavorTree({ F: { color: '#ffffff', notes: ['a'], groups: [2] } }));
+t('validateFlavorTree: rejects invalid note colours', !validateFlavorTree({ F: { color: '#ffffff', notes: ['a'], noteColors: { a: 'red' } } }));
+t('validateFlavorProfile: accepts imported profile', validateFlavorProfile({ _id: 'p1', name: 'Mine', flavors: flavorTree }));
+t('validateFlavorProfile: rejects missing identity', !validateFlavorProfile({ name: 'Mine', flavors: flavorTree }));
 
 // ---------- wheel layout ----------
 const FLAVORS = {

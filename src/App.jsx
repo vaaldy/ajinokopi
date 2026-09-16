@@ -2,7 +2,8 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import yaml from 'js-yaml';
 import {
   SCA_DIMS, validateBrews, newBrewDoc, mergeBrews, loadStore, saveStore, noteColorOf, ink,
-  fingerprintTones, ringOrder,
+  fingerprintTones, ringOrder, uuid, validateFlavorTree, loadFlavorProfiles, saveFlavorProfiles,
+  DEFAULT_FLAVOR_PROFILE_ID,
 } from './lib.js';
 import { Fingerprint, Wheel } from './wheel.jsx';
 
@@ -91,10 +92,11 @@ function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen, ani
 }
 
 export default function App() {
-  const [flavors, setFlavors] = useState(null);
+  const [bundledFlavors, setBundledFlavors] = useState(null);
+  const [profileStore, setProfileStore] = useState(loadFlavorProfiles);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
-  const [screen, setScreen] = useState('wheel'); // wheel | card | fingerprint | archive
+  const [screen, setScreen] = useState('wheel'); // wheel | card | fingerprint | archive | profiles
   const [running, setRunning] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [wheelFingerprint, setWheelFingerprint] = useState(null);
@@ -104,6 +106,7 @@ export default function App() {
   const [open, setOpen] = useState({});
   const [nameCompact, setNameCompact] = useState(false);
   const fileRef = useRef();
+  const profileFileRef = useRef();
   const typingRef = useRef();
   const handleRef = useRef();
   const menuRef = useRef();
@@ -112,9 +115,13 @@ export default function App() {
   const archiveScroll = useRef(0);
 
   useEffect(() => {
-    fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
+    fetch('flavors.yaml').then(r => r.text()).then(t => {
+      const tree = yaml.load(t);
+      if (validateFlavorTree(tree)) setBundledFlavors(tree);
+    });
   }, []);
   useEffect(() => saveStore(store), [store]);
+  useEffect(() => saveFlavorProfiles(profileStore), [profileStore]);
   useEffect(() => {
     const esc = e => { if (e.key === 'Escape') setMenu(null); };
     window.addEventListener('keydown', esc);
@@ -122,23 +129,27 @@ export default function App() {
   }, []);
 
   const cur = store.brews.find(b => b._id === store.currentId);
-  const ran = screen === 'card', fingerprintView = screen === 'fingerprint', browsing = screen === 'archive';
+  const ran = screen === 'card', fingerprintView = screen === 'fingerprint';
+  const browsing = screen === 'archive', managingProfiles = screen === 'profiles';
+  const localProfile = profileStore.profiles.find(p => p._id === profileStore.activeId);
+  const flavors = localProfile?.flavors || bundledFlavors;
   useEffect(() => {
     clearTimeout(screenTimer.current);
     setScreen('wheel'); setWheelFingerprint(null);
   }, [cur?._id]);
+  useEffect(() => setWheelFingerprint(null), [profileStore.activeId]);
   useEffect(() => () => clearTimeout(screenTimer.current), []);
   useEffect(() => {
     if (menu === 'brews') menuRef.current?.querySelector('.current-date')?.scrollIntoView({ block: 'nearest' });
   }, [menu, cur?.createdAt]);
   useLayoutEffect(() => {
-    if (!browsing) return undefined;
+    if (!browsing && !managingProfiles) return undefined;
     document.activeElement?.blur();
-    archiveRef.current.scrollTop = archiveScroll.current;
+    if (browsing) archiveRef.current.scrollTop = archiveScroll.current;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = overflow; };
-  }, [browsing]);
+  }, [browsing, managingProfiles]);
 
   useLayoutEffect(() => {
     const cell = typingRef.current;
@@ -186,6 +197,10 @@ export default function App() {
                                                 animated={fingerprintView}
                                                 onOpen={() => setScreen(fingerprintView ? 'card' : 'fingerprint')} />;
   const sortedBrews = [...store.brews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const flavorProfiles = [
+    { _id: DEFAULT_FLAVOR_PROFILE_ID, name: 'Ajinokopi default', flavors: bundledFlavors, bundled: true },
+    ...profileStore.profiles,
+  ];
 
   // Every field is as wide as what it holds (mono, so a char count is a width; +6px is the
   // highlight's own padding) and wears its note colour once it has something to show.
@@ -323,14 +338,59 @@ export default function App() {
     e.target.value = '';
   };
 
+  const importFlavorProfile = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const parsed = yaml.load(await file.text());
+      const tree = parsed?.flavors || parsed;
+      if (!validateFlavorTree(tree)) throw new Error('schema');
+      const fallbackName = file.name.replace(/\.(ya?ml|json)$/i, '') || 'Imported profile';
+      const profile = {
+        _id: uuid(),
+        name: typeof parsed?.name === 'string' && parsed.name.trim() ? parsed.name.trim() : fallbackName,
+        flavors: tree, fileName: file.name, importedAt: new Date().toISOString(),
+      };
+      setProfileStore(s => ({ profiles: [...s.profiles, profile], activeId: profile._id }));
+    } catch {
+      alert('Not a valid flavor profile');
+    }
+    e.target.value = '';
+  };
+
+  const exportFlavorProfile = async profile => {
+    const body = JSON.stringify({ name: profile.name, flavors: profile.flavors }, null, 2);
+    const filename = `${slug(profile.name)}.json`;
+    const blob = new Blob([body], { type: 'application/json' });
+    const file = new File([blob], filename, { type: 'application/json' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: profile.name }); } catch (error) {
+        if (error.name !== 'AbortError') alert('Could not share this flavor profile');
+      }
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  const rmFlavorProfile = profile => {
+    if (!window.confirm(`rm ${slug(profile.name)} — delete this flavor profile?`)) return;
+    setProfileStore(s => ({
+      profiles: s.profiles.filter(p => p._id !== profile._id),
+      activeId: s.activeId === profile._id ? DEFAULT_FLAVOR_PROFILE_ID : s.activeId,
+    }));
+  };
+
   return (
-    <div className={'appShell' + (browsing ? ' archiveMode' : '') + (fingerprintView ? ' fingerprintCardMode' : '')}>
+    <div className={'appShell' + ((browsing || managingProfiles) ? ' archiveMode' : '') + (fingerprintView ? ' fingerprintCardMode' : '')}>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
-      <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || fingerprintView || browsing) ? ' overlayScreen' : '') + (fingerprintView ? ' fingerprintCardHeader' : '')}>
-        {browsing ? (
+      <header className={'pane' + ((browsing || managingProfiles) ? ' browsing' : '') + ((ran || fingerprintView || browsing || managingProfiles) ? ' overlayScreen' : '') + (fingerprintView ? ' fingerprintCardHeader' : '')}>
+        {(browsing || managingProfiles) ? (
           <button className="archivePaneBack" onClick={() => {
-            archiveScroll.current = archiveRef.current?.scrollTop || 0;
+            if (browsing) archiveScroll.current = archiveRef.current?.scrollTop || 0;
             setScreen('wheel');
           }}>&lt; back to wheel + terminal</button>
         ) : <>
@@ -387,6 +447,7 @@ export default function App() {
         )}
         {menu === 'sys' && (
           <div className="menu">
+            <button className="row" onClick={() => { setScreen('profiles'); setMenu(null); }}>flavor profiles...</button>
             <button className="row" onClick={() => { fileRef.current.click(); setMenu(null); }}>import</button>
             <button className="row" onClick={copy}>{copied ? 'copied!' : 'copy'}</button>
             <button className="row" onClick={() => { exportJson(); setMenu(null); }}>export</button>
@@ -397,6 +458,9 @@ export default function App() {
       </header>
 
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
+      <input ref={profileFileRef} type="file"
+             accept=".yaml,.yml,.json,application/yaml,application/json,text/yaml,text/x-yaml,application/x-yaml,text/plain"
+             hidden onChange={importFlavorProfile} />
 
       {browsing ? (
         <main className="archiveScreen" ref={archiveRef}
@@ -410,10 +474,34 @@ export default function App() {
                           }} />
           ))}
         </main>
+      ) : managingProfiles ? (
+        <main className="profilesScreen">
+          <div className="profilesTitle">~/flavor-profiles</div>
+          <p className="profilesHelp">select bundled wheel or import YAML / JSON from this browser</p>
+          <div className="profileList">
+            {flavorProfiles.map(profile => {
+              const familyCount = Object.keys(profile.flavors).length;
+              const noteCount = Object.values(profile.flavors).reduce((n, family) => n + family.notes.length, 0);
+              const active = profile._id === profileStore.activeId;
+              return (
+                <div className={'profileRow' + (active ? ' active' : '')} key={profile._id}>
+                  <button className="profilePick" aria-pressed={active}
+                          onClick={() => setProfileStore(s => ({ ...s, activeId: profile._id }))}>
+                    <span>{active ? '[x]' : '[ ]'} {profile.name}</span>
+                    <small>{profile.bundled ? 'bundled' : 'browser'} · {familyCount} families · {noteCount} notes</small>
+                  </button>
+                  <button className="profileAction" onClick={() => exportFlavorProfile(profile)}>export</button>
+                  {!profile.bundled && <button className="profileAction rm" onClick={() => rmFlavorProfile(profile)}>rm</button>}
+                </div>
+              );
+            })}
+          </div>
+          <button className="importProfile" onClick={() => profileFileRef.current?.click()}>+ import profile...</button>
+        </main>
       ) : (
       <main className={'workspace' + ((ran || fingerprintView) ? ' resultMode' : '') + (running ? ' running' : '')}>
       <section className="wheelStage">
-        <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
+        <Wheel key={`${cur._id}:${profileStore.activeId}`} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
                runAway={running} returning={restoring}
                onFingerprint={({ tones, baseCol, hubR, cx, cy }) => setWheelFingerprint(prev => {
                  const scale = 195 / hubR;

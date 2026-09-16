@@ -127,6 +127,54 @@ export const colorMapper = {
 export const noteColors = (cat, def) =>
   def.notes.map((_, i) => colorMapper.note(cat, def, i, def.notes.length));
 
+// ---------- flavor profiles ----------
+export const DEFAULT_FLAVOR_PROFILE_ID = 'bundled:default';
+const HEX = /^#[0-9a-f]{6}$/i;
+
+export function validateFlavorTree(tree) {
+  if (!tree || typeof tree !== 'object' || Array.isArray(tree)) return false;
+  const families = Object.entries(tree);
+  if (!families.length) return false;
+  return families.every(([name, def]) => {
+    if (!name.trim() || !def || typeof def !== 'object' || Array.isArray(def) || !HEX.test(def.color)) return false;
+    if (!Array.isArray(def.notes) || !def.notes.length ||
+        !def.notes.every(n => typeof n === 'string' && n.trim()) ||
+        new Set(def.notes).size !== def.notes.length) return false;
+    if (def.noteColors != null &&
+        (!def.noteColors || typeof def.noteColors !== 'object' || Array.isArray(def.noteColors) ||
+         !Object.values(def.noteColors).every(c => typeof c === 'string' && HEX.test(c)))) return false;
+    if (def.groups != null &&
+        (!Array.isArray(def.groups) || !def.groups.length ||
+         !def.groups.every(n => Number.isInteger(n) && n > 0) ||
+         def.groups.reduce((a, b) => a + b, 0) !== def.notes.length)) return false;
+    return true;
+  });
+}
+
+export function validateFlavorProfile(profile) {
+  return !!(profile && typeof profile === 'object' &&
+    typeof profile._id === 'string' && profile._id &&
+    typeof profile.name === 'string' && profile.name.trim() &&
+    validateFlavorTree(profile.flavors));
+}
+
+export function loadFlavorProfiles() {
+  let profiles = [];
+  try { profiles = JSON.parse(localStorage.getItem('flavorProfiles')) || []; } catch { /* fresh start */ }
+  if (!Array.isArray(profiles)) profiles = [];
+  profiles = profiles.filter(validateFlavorProfile);
+  let activeId = localStorage.getItem('activeFlavorProfileId') || DEFAULT_FLAVOR_PROFILE_ID;
+  if (activeId !== DEFAULT_FLAVOR_PROFILE_ID && !profiles.some(p => p._id === activeId)) {
+    activeId = DEFAULT_FLAVOR_PROFILE_ID;
+  }
+  return { profiles, activeId };
+}
+
+export function saveFlavorProfiles({ profiles, activeId }) {
+  localStorage.setItem('flavorProfiles', JSON.stringify(profiles));
+  localStorage.setItem('activeFlavorProfileId', activeId);
+}
+
 // flavors.yaml is user-editable, so a saved brew can hold notes from a family that no longer
 // exists. Those pills still have to draw, so resolve colour defensively rather than throwing.
 export const UNKNOWN_COLOR = '#8d8177';
