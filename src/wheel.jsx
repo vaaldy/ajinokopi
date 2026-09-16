@@ -2,8 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   norm, polar, sectorPath, capsulePath, arcPath, flipped, ink, noteColors,
   ringOrder, radialGroups, noteFan, viewBoxFor, hitWheel, layoutWheel, dragPillAngle,
-  fingerprintTones, mixWeightFor, noteColorOf,
+  fingerprintTones, mixWeightFor, noteColorOf, hexToHsl,
 } from './lib.js';
+
+const vivid = col => {
+  const { h, s, l } = hexToHsl(col);
+  return `hsl(${h} ${Math.min(100, s * 3)}% ${l}%)`;
+};
 
 // feTurbulence is the most expensive primitive in SVG and on phones it is not GPU-accelerated.
 // Nothing here depends on state, so the element is built once at module scope: a stable element
@@ -21,18 +26,27 @@ const GRAIN = id => (
 // The hub is the cup itself: one soft tone per logged note, each sitting just outside the
 // disc on its own bearing so only its inner arc shows, the whole stack blurred and clipped.
 // Pulling a tone inward (its handle, drawn by <Wheel>) grows its share of the blend.
-export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix = 'fp', decorations = true, clipDisc = true }) {
+export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix = 'fp', decorations = true, clipDisc = true, motion = false }) {
   const gid = k => idPrefix + '-' + k.replace(/[^a-z0-9]/gi, '');
   const clipId = idPrefix + '-clip';
   const grainId = idPrefix + '-grain';
+  const toneCol = l => motion ? vivid(l.col) : l.col;
   const glide = { transition: dragging ? 'none' : 'all 1s cubic-bezier(.2,.8,.2,1)' };
   // Drift is animated with SVG-native <animateTransform> rather than a CSS transform: a CSS
   // animation here escapes the ancestor's clip-path + filter in some renderers and lets the
   // blobs bleed past the disc edge.
   const drift = (i, mag) => (
     <animateTransform attributeName="transform" type="translate" additive="sum"
-      values={`0 0; ${mag} ${-mag * 0.8}; ${-mag * 0.7} ${mag}; 0 0`}
-      dur={`${13 + i * 3.5}s`} begin={`${i * -1.3}s`} repeatCount="indefinite" />
+      values={motion
+        ? `0 0; ${mag} ${-mag * 0.65}; ${-mag * 0.85} ${mag * 0.7}; ${mag * 0.35} ${mag}; 0 0`
+        : `0 0; ${mag} ${-mag * 0.8}; ${-mag * 0.7} ${mag}; 0 0`}
+      dur={`${(motion ? 4.5 : 13) + i * (motion ? 0.8 : 3.5)}s`}
+      begin={`${i * (motion ? -0.9 : -1.3)}s`} repeatCount="indefinite" />
+  );
+  const orbit = i => (
+    <animateTransform attributeName="transform" type="rotate" additive="sum"
+      from={`0 ${cx} ${cy}`} to={`${i % 2 ? -360 : 360} ${cx} ${cy}`}
+      dur={`${8 + i * 1.15}s`} begin={`${i * -1.2}s`} repeatCount="indefinite" />
   );
   return (
     <g style={{ pointerEvents: 'none', filter: sat }}>
@@ -42,6 +56,10 @@ export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix
         </clipPath>
         {GRAIN(grainId)}
         <radialGradient id={gid('base')} cx="50%" cy="38%" r="78%">
+          {motion && <>
+            <animate attributeName="cx" values="18%;82%;36%;18%" dur="6s" repeatCount="indefinite" />
+            <animate attributeName="cy" values="18%;76%;32%;18%" dur="4.8s" repeatCount="indefinite" />
+          </>}
           <stop offset="0%" stopColor={baseCol} stopOpacity="1" />
           <stop offset="100%" stopColor={baseCol} stopOpacity="0.72" />
         </radialGradient>
@@ -49,11 +67,11 @@ export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix
           // Eased, near-gaussian ramp: the steep old tail (0.72 -> 0 over the last 45%)
           // drew a visible rim inside the disc.
           <radialGradient key={l.note} id={gid(l.note)} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={l.col} stopOpacity="0.98" />
-            <stop offset="35%" stopColor={l.col} stopOpacity="0.7" />
-            <stop offset="65%" stopColor={l.col} stopOpacity="0.35" />
-            <stop offset="85%" stopColor={l.col} stopOpacity="0.1" />
-            <stop offset="100%" stopColor={l.col} stopOpacity="0" />
+            <stop offset="0%" stopColor={toneCol(l)} stopOpacity="0.98" />
+            <stop offset="35%" stopColor={toneCol(l)} stopOpacity="0.7" />
+            <stop offset="65%" stopColor={toneCol(l)} stopOpacity="0.35" />
+            <stop offset="85%" stopColor={toneCol(l)} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={toneCol(l)} stopOpacity="0" />
           </radialGradient>
         ))}
       </defs>
@@ -64,7 +82,15 @@ export function Fingerprint({ cx, cy, r, tones, baseCol, dragging, sat, idPrefix
           // Oversized so the gradient's zero-edge lands outside the clipped disc (Zen-browser
           // trick): only the smooth interior falloff is ever visible, never the circle's rim.
           <circle key={l.note} cx={l.bx} cy={l.by} r={l.R * 2.4} fill={`url(#${gid(l.note)})`} style={glide}>
-            {drift(i, r * 0.05)}
+            {drift(i, r * (motion ? 0.34 : 0.05))}
+            {motion && <>
+              {orbit(i)}
+              <animate attributeName="r"
+                values={`${l.R * 1.35};${l.R * 3.15};${l.R * 1.7};${l.R * 2.8};${l.R * 1.35}`}
+                dur={`${5.2 + i * 0.75}s`} begin={`${i * -0.8}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.18;1;0.32;0.92;0.18"
+                dur={`${3.8 + i * 0.65}s`} begin={`${i * -0.7}s`} repeatCount="indefinite" />
+            </>}
           </circle>
         ))}
       </g>

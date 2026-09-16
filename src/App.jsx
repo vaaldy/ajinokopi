@@ -43,7 +43,7 @@ function brewRows(brews, open) {
 // The coffee line: one field per part, read left to right as "washed natural ethiopia".
 const TRIO = [['process', 'Process'], ['origin', 'Origin'], ['varietal', 'Varietal']];
 
-function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen }) {
+function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen, animated = false }) {
   const press = useRef(null);
   const ring = ringOrder(Object.keys(flavors), flavors);
   const colorOf = (category, note) => noteColorOf(flavors, category, note);
@@ -70,7 +70,8 @@ function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen }) {
              })}>
       <svg className="cardFingerprint" viewBox="0 0 390 390" preserveAspectRatio="none" aria-hidden="true">
         <Fingerprint cx={195} cy={195} r={195} tones={fp.tones} baseCol={fp.baseCol}
-                     sat="saturate(1)" idPrefix={'cardfp-' + brew._id} decorations={false} clipDisc={false} />
+                     sat="saturate(1)" idPrefix={'cardfp-' + brew._id} decorations={false}
+                     clipDisc={false} motion={animated} />
       </svg>
       <div className="shareCardShade">
         <div className="shareCardHead"><span className="shareCardDate">{iso(brew.createdAt)}</span></div>
@@ -182,6 +183,7 @@ export default function App() {
   const activeFingerprint = wheelFingerprint || { tones: cardTones, baseCol: cardBase };
   const spectrumCard = <SpectrumCard brew={cur} flavors={flavors} fingerprint={activeFingerprint} />;
   const openableSpectrumCard = <SpectrumCard brew={cur} flavors={flavors} fingerprint={activeFingerprint}
+                                                animated={fingerprintView}
                                                 onOpen={() => setScreen(fingerprintView ? 'card' : 'fingerprint')} />;
   const sortedBrews = [...store.brews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
