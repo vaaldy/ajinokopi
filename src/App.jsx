@@ -2,8 +2,8 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import yaml from 'js-yaml';
 import {
   SCA_DIMS, validateBrews, newBrewDoc, mergeBrews, loadStore, saveStore, noteColorOf, ink,
-  fingerprintTones, ringOrder, uuid, validateFlavorTree, loadFlavorProfiles, saveFlavorProfiles,
-  DEFAULT_FLAVOR_PROFILE_ID,
+  fingerprintTones, ringOrder, uuid, shades, validateFlavorTree, loadFlavorProfiles, saveFlavorProfiles,
+  flavorTreeToDraft, flavorDraftToTree, DEFAULT_FLAVOR_PROFILE_ID,
 } from './lib.js';
 import { Fingerprint, Wheel } from './wheel.jsx';
 
@@ -43,6 +43,36 @@ function brewRows(brews, open) {
 
 // The coffee line: one field per part, read left to right as "washed natural ethiopia".
 const TRIO = [['process', 'Process'], ['origin', 'Origin'], ['varietal', 'Varietal']];
+
+const moved = (items, index, delta) => {
+  const next = [...items], target = index + delta;
+  if (target < 0 || target >= next.length) return next;
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+};
+
+const uniqueLabel = (stem, used) => {
+  let i = 1, name = stem;
+  while (used.has(name)) name = `${stem} ${i++}`;
+  return name;
+};
+
+// Preview tolerates a half-typed blank or duplicate. Save remains strict.
+const previewFlavorTree = families => {
+  const tree = {}, usedFamilies = new Set();
+  families.forEach((family, fi) => {
+    const base = family.name.trim() || `Family ${fi + 1}`;
+    const familyName = uniqueLabel(base, usedFamilies); usedFamilies.add(familyName);
+    const usedNotes = new Set();
+    const notes = family.notes.map((note, ni) => {
+      const label = uniqueLabel(note.name.trim() || `note ${ni + 1}`, usedNotes);
+      usedNotes.add(label); return label;
+    });
+    const noteColors = Object.fromEntries(family.notes.flatMap((note, i) => note.color ? [[notes[i], note.color]] : []));
+    tree[familyName] = { color: family.color, notes, ...(Object.keys(noteColors).length && { noteColors }) };
+  });
+  return tree;
+};
 
 function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen, animated = false }) {
   const press = useRef(null);
@@ -96,7 +126,10 @@ export default function App() {
   const [profileStore, setProfileStore] = useState(loadFlavorProfiles);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
-  const [screen, setScreen] = useState('wheel'); // wheel | card | fingerprint | archive | profiles
+  const [screen, setScreen] = useState('wheel'); // wheel | card | fingerprint | archive | profiles | profile-editor
+  const [editingDraft, setEditingDraft] = useState(null);
+  const [openFamilies, setOpenFamilies] = useState({});
+  const [armedDelete, setArmedDelete] = useState(null);
   const [running, setRunning] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [wheelFingerprint, setWheelFingerprint] = useState(null);
@@ -113,6 +146,8 @@ export default function App() {
   const screenTimer = useRef();
   const archiveRef = useRef();
   const archiveScroll = useRef(0);
+  const draftInitial = useRef('');
+  const deleteTimer = useRef();
 
   useEffect(() => {
     fetch('flavors.yaml').then(r => r.text()).then(t => {
@@ -131,6 +166,7 @@ export default function App() {
   const cur = store.brews.find(b => b._id === store.currentId);
   const ran = screen === 'card', fingerprintView = screen === 'fingerprint';
   const browsing = screen === 'archive', managingProfiles = screen === 'profiles';
+  const editingProfile = screen === 'profile-editor';
   const localProfile = profileStore.profiles.find(p => p._id === profileStore.activeId);
   const flavors = localProfile?.flavors || bundledFlavors;
   useEffect(() => {
@@ -138,18 +174,20 @@ export default function App() {
     setScreen('wheel'); setWheelFingerprint(null);
   }, [cur?._id]);
   useEffect(() => setWheelFingerprint(null), [profileStore.activeId]);
-  useEffect(() => () => clearTimeout(screenTimer.current), []);
+  useEffect(() => () => {
+    clearTimeout(screenTimer.current); clearTimeout(deleteTimer.current);
+  }, []);
   useEffect(() => {
     if (menu === 'brews') menuRef.current?.querySelector('.current-date')?.scrollIntoView({ block: 'nearest' });
   }, [menu, cur?.createdAt]);
   useLayoutEffect(() => {
-    if (!browsing && !managingProfiles) return undefined;
+    if (!browsing && !managingProfiles && !editingProfile) return undefined;
     document.activeElement?.blur();
     if (browsing) archiveRef.current.scrollTop = archiveScroll.current;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = overflow; };
-  }, [browsing, managingProfiles]);
+  }, [browsing, managingProfiles, editingProfile]);
 
   useLayoutEffect(() => {
     const cell = typingRef.current;
@@ -201,6 +239,9 @@ export default function App() {
     { _id: DEFAULT_FLAVOR_PROFILE_ID, name: 'Ajinokopi default', flavors: bundledFlavors, bundled: true },
     ...profileStore.profiles,
   ];
+  const draftTree = editingDraft && flavorDraftToTree(editingDraft.families);
+  const draftValid = !!(editingDraft?.name.trim() && draftTree);
+  const previewTree = editingDraft && previewFlavorTree(editingDraft.families);
 
   // Every field is as wide as what it holds (mono, so a char count is a width; +6px is the
   // highlight's own padding) and wears its note colour once it has something to show.
@@ -383,12 +424,76 @@ export default function App() {
     }));
   };
 
+  const startProfileEditor = (profile, copy = false, name) => {
+    const draft = {
+      _id: copy ? uuid() : profile._id,
+      name: name || (copy ? `${profile.name} copy` : profile.name),
+      families: flavorTreeToDraft(profile.flavors), isNew: copy,
+    };
+    draftInitial.current = JSON.stringify(draft);
+    setEditingDraft(draft); setOpenFamilies({}); setArmedDelete(null); setScreen('profile-editor');
+  };
+
+  const cancelProfileEditor = () => {
+    if (JSON.stringify(editingDraft) !== draftInitial.current && !window.confirm('Discard flavor profile edits?')) return;
+    setEditingDraft(null); setScreen('profiles');
+  };
+
+  const saveProfileDraft = () => {
+    if (!draftValid) return;
+    const saved = {
+      _id: editingDraft._id, name: editingDraft.name.trim(), flavors: draftTree,
+      updatedAt: new Date().toISOString(),
+    };
+    setProfileStore(s => ({
+      profiles: s.profiles.some(p => p._id === saved._id)
+        ? s.profiles.map(p => p._id === saved._id ? { ...p, ...saved } : p)
+        : [...s.profiles, saved],
+      activeId: saved._id,
+    }));
+    setEditingDraft(null); setScreen('profiles');
+  };
+
+  const updateFamily = (index, change) => setEditingDraft(d => ({
+    ...d, families: d.families.map((family, i) => i === index ? change(family) : family),
+  }));
+  const updateNote = (familyIndex, noteIndex, change) => updateFamily(familyIndex, family => ({
+    ...family, notes: family.notes.map((note, i) => i === noteIndex ? change(note) : note),
+  }));
+  const armDelete = (key, remove) => {
+    clearTimeout(deleteTimer.current);
+    if (armedDelete === key) { setArmedDelete(null); remove(); return; }
+    setArmedDelete(key);
+    deleteTimer.current = setTimeout(() => setArmedDelete(null), 3500);
+  };
+
+  const addFamily = () => {
+    const used = new Set(editingDraft.families.map(f => f.name));
+    const name = uniqueLabel('New family', used), key = uuid();
+    setEditingDraft(d => ({ ...d, families: [...d.families, {
+      _key: key, name, color: '#d9a066', notes: [{ _key: uuid(), name: 'note 1', color: null }],
+    }] }));
+    setOpenFamilies(o => ({ ...o, [key]: true }));
+  };
+
+  const addNote = familyIndex => updateFamily(familyIndex, family => {
+    const name = uniqueLabel('new note', new Set(family.notes.map(n => n.name)));
+    return { ...family, groups: undefined, notes: [...family.notes, { _key: uuid(), name, color: null }] };
+  });
+
   return (
-    <div className={'appShell' + ((browsing || managingProfiles) ? ' archiveMode' : '') + (fingerprintView ? ' fingerprintCardMode' : '')}>
+    <div className={'appShell' + ((browsing || managingProfiles || editingProfile) ? ' archiveMode' : '') + (fingerprintView ? ' fingerprintCardMode' : '')}>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
-      <header className={'pane' + ((browsing || managingProfiles) ? ' browsing' : '') + ((ran || fingerprintView || browsing || managingProfiles) ? ' overlayScreen' : '') + (fingerprintView ? ' fingerprintCardHeader' : '')}>
-        {(browsing || managingProfiles) ? (
+      <header className={'pane' + ((browsing || managingProfiles || editingProfile) ? ' browsing' : '') + ((ran || fingerprintView || browsing || managingProfiles || editingProfile) ? ' overlayScreen' : '') + (fingerprintView ? ' fingerprintCardHeader' : '') + (managingProfiles ? ' profileManagerHeader' : '') + (editingProfile ? ' profileEditorHeader' : '')}>
+        {editingProfile ? (
+          <>
+            <button className="peCancel" onClick={cancelProfileEditor}>&lt; cancel</button>
+            <input className="peProfileName" value={editingDraft.name} aria-label="Flavor profile name"
+                   onChange={e => setEditingDraft(d => ({ ...d, name: e.target.value }))} />
+            <button className="peSave" disabled={!draftValid} onClick={saveProfileDraft}>save</button>
+          </>
+        ) : (browsing || managingProfiles) ? (
           <button className="archivePaneBack" onClick={() => {
             if (browsing) archiveScroll.current = archiveRef.current?.scrollTop || 0;
             setScreen('wheel');
@@ -490,13 +595,102 @@ export default function App() {
                     <span>{active ? '[x]' : '[ ]'} {profile.name}</span>
                     <small>{profile.bundled ? 'bundled' : 'browser'} · {familyCount} families · {noteCount} notes</small>
                   </button>
+                  <button className="profileAction" onClick={() => startProfileEditor(profile, profile.bundled)}>
+                    {profile.bundled ? 'copy + edit' : 'edit'}
+                  </button>
                   <button className="profileAction" onClick={() => exportFlavorProfile(profile)}>export</button>
                   {!profile.bundled && <button className="profileAction rm" onClick={() => rmFlavorProfile(profile)}>rm</button>}
                 </div>
               );
             })}
           </div>
-          <button className="importProfile" onClick={() => profileFileRef.current?.click()}>+ import profile...</button>
+          <div className="profileCreateActions">
+            <button className="importProfile" onClick={() => startProfileEditor(flavorProfiles[0], true, 'Custom profile')}>+ new profile</button>
+            <button className="importProfile" onClick={() => profileFileRef.current?.click()}>+ import profile...</button>
+          </div>
+        </main>
+      ) : editingProfile ? (
+        <main className="profileEditorScreen">
+          <section className="peStage" aria-label="Live flavor wheel preview">
+            <Wheel key={JSON.stringify(previewTree)} flavors={previewTree} notes={[]} intensity={5}
+                   onAdd={() => {}} onRemove={() => {}} />
+          </section>
+          <section className="peDeck">
+            <div className="peDeckIntro">
+              <h1>Shape your wheel</h1>
+              <p>Families form the ring. Notes open from each family.</p>
+              {!draftValid && <p className="peError">Names must be filled and unique before saving.</p>}
+            </div>
+            {editingDraft.families.map((family, fi) => {
+              const expanded = !!openFamilies[family._key];
+              return (
+                <article className="peFamilyCard" key={family._key}>
+                  <div className="peFamilyMain">
+                    <label className="peColorWell" style={{ background: family.color }}>
+                      <span className="srOnly">Color for {family.name || `family ${fi + 1}`}</span>
+                      <input type="color" value={family.color}
+                             onChange={e => updateFamily(fi, f => ({ ...f, color: e.target.value }))} />
+                    </label>
+                    <input className="peName" value={family.name} aria-label={`Family ${fi + 1} name`}
+                           onChange={e => updateFamily(fi, f => ({ ...f, name: e.target.value }))} />
+                    <span className="peCount">{family.notes.length}</span>
+                    <button className="peIcon" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${family.name}`}
+                            onClick={() => setOpenFamilies(o => ({ ...o, [family._key]: !expanded }))}>
+                      {expanded ? '−' : '+'}
+                    </button>
+                  </div>
+                  <div className="peFamilyTools">
+                    <button disabled={fi === 0} onClick={() => setEditingDraft(d => ({ ...d, families: moved(d.families, fi, -1) }))}>↑ move</button>
+                    <button disabled={fi === editingDraft.families.length - 1}
+                            onClick={() => setEditingDraft(d => ({ ...d, families: moved(d.families, fi, 1) }))}>↓ move</button>
+                    <button className={armedDelete === `family:${family._key}` ? 'armed' : ''}
+                            disabled={editingDraft.families.length === 1}
+                            onClick={() => armDelete(`family:${family._key}`, () =>
+                              setEditingDraft(d => ({ ...d, families: d.families.filter(f => f._key !== family._key) })))}>
+                      {armedDelete === `family:${family._key}` ? 'confirm?' : 'remove'}
+                    </button>
+                  </div>
+                  {expanded && (
+                    <div className="peNotes">
+                      {family.notes.map((note, ni) => {
+                        const inherited = shades(family.color, family.notes.length)[ni];
+                        return (
+                          <div className="peNote" key={note._key}>
+                            <div className="peNoteMain">
+                              <label className="peColorWell note" style={{ background: note.color || inherited }}>
+                                <span className="srOnly">Color for {note.name || `note ${ni + 1}`}</span>
+                                <input type="color" value={note.color || inherited}
+                                       onChange={e => updateNote(fi, ni, n => ({ ...n, color: e.target.value }))} />
+                              </label>
+                              <input className="peName" value={note.name} aria-label={`Note ${ni + 1} name`}
+                                     onChange={e => updateNote(fi, ni, n => ({ ...n, name: e.target.value }))} />
+                              {note.color
+                                ? <button className="peReset" onClick={() => updateNote(fi, ni, n => ({ ...n, color: null }))}>use family</button>
+                                : <span className="peInherited">inherited</span>}
+                            </div>
+                            <div className="peNoteTools">
+                              <button disabled={ni === 0} onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, -1) }))}>↑</button>
+                              <button disabled={ni === family.notes.length - 1}
+                                      onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, 1) }))}>↓</button>
+                              <button className={armedDelete === `note:${note._key}` ? 'armed' : ''}
+                                      disabled={family.notes.length === 1}
+                                      onClick={() => armDelete(`note:${note._key}`, () => updateFamily(fi, f => ({
+                                        ...f, groups: undefined, notes: f.notes.filter(n => n._key !== note._key),
+                                      })))}>
+                                {armedDelete === `note:${note._key}` ? 'confirm?' : 'remove'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button className="peAdd" onClick={() => addNote(fi)}>+ add note</button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+            <button className="peAdd family" onClick={addFamily}>+ add family</button>
+          </section>
         </main>
       ) : (
       <main className={'workspace' + ((ran || fingerprintView) ? ' resultMode' : '') + (running ? ' running' : '')}>

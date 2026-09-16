@@ -158,6 +158,30 @@ export function validateFlavorProfile(profile) {
     validateFlavorTree(profile.flavors));
 }
 
+export function flavorTreeToDraft(tree, key = uuid) {
+  return Object.entries(tree).map(([name, def]) => ({
+    _key: key(), name, color: def.color, groups: def.groups && [...def.groups],
+    notes: def.notes.map(note => ({ _key: key(), name: note, color: def.noteColors?.[note] || null })),
+  }));
+}
+
+export function flavorDraftToTree(families) {
+  if (!Array.isArray(families) || !families.length) return null;
+  const familyNames = families.map(f => f.name.trim());
+  if (familyNames.some(n => !n) || new Set(familyNames).size !== familyNames.length) return null;
+  const tree = {};
+  families.forEach((family, i) => {
+    const notes = family.notes.map(n => n.name.trim());
+    const noteColors = Object.fromEntries(family.notes.flatMap((note, j) => note.color ? [[notes[j], note.color]] : []));
+    tree[familyNames[i]] = {
+      color: family.color, notes,
+      ...(Object.keys(noteColors).length && { noteColors }),
+      ...(family.groups?.reduce((a, b) => a + b, 0) === notes.length && { groups: [...family.groups] }),
+    };
+  });
+  return validateFlavorTree(tree) ? tree : null;
+}
+
 export function loadFlavorProfiles() {
   let profiles = [];
   try { profiles = JSON.parse(localStorage.getItem('flavorProfiles')) || []; } catch { /* fresh start */ }

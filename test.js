@@ -6,7 +6,8 @@ import {
   ringOrder, radialGroups, noteFan, wheelGeom, viewBoxFor, hitWheel,
   layoutPills, layoutWheel, dragPillAngle, fingerprintTones, mixWeightFor,
   uuid, validateBrews, newBrewDoc, fillBrew, mergeBrews, defaultScores, noteColorOf, UNKNOWN_COLOR,
-  validateFlavorTree, validateFlavorProfile, DEFAULT_FLAVOR_PROFILE_ID, toRgb, mixColors,
+  validateFlavorTree, validateFlavorProfile, flavorTreeToDraft, flavorDraftToTree,
+  DEFAULT_FLAVOR_PROFILE_ID, toRgb, mixColors,
 } from './src/lib.js';
 
 const results = [];
@@ -53,6 +54,18 @@ t('validateFlavorTree: rejects mismatched groups', !validateFlavorTree({ F: { co
 t('validateFlavorTree: rejects invalid note colours', !validateFlavorTree({ F: { color: '#ffffff', notes: ['a'], noteColors: { a: 'red' } } }));
 t('validateFlavorProfile: accepts imported profile', validateFlavorProfile({ _id: 'p1', name: 'Mine', flavors: flavorTree }));
 t('validateFlavorProfile: rejects missing identity', !validateFlavorProfile({ name: 'Mine', flavors: flavorTree }));
+const flavorDraft = flavorTreeToDraft(flavorTree, (() => { let i = 0; return () => `k${i++}`; })());
+t('flavor draft: tree round-trips without losing order', JSON.stringify(flavorDraftToTree(flavorDraft)) === JSON.stringify(flavorTree));
+flavorDraft[0].notes[1].color = '#abcdef';
+t('flavor draft: later note color stays on that note', flavorDraftToTree(flavorDraft).Floral.noteColors.rose === '#abcdef');
+t('flavor draft: family rename preserves position', (() => {
+  flavorDraft[0].name = 'Flowers';
+  return Object.keys(flavorDraftToTree(flavorDraft))[0] === 'Flowers';
+})());
+t('flavor draft: rejects duplicate family names', (() => {
+  flavorDraft[1].name = 'Flowers';
+  return flavorDraftToTree(flavorDraft) === null;
+})());
 
 // ---------- wheel layout ----------
 const FLAVORS = {
