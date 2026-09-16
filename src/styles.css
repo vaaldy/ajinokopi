@@ -15,11 +15,17 @@ body {
 .appShell {
   display: flex; flex-direction: column; min-height: 100dvh;
   padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom, 0px) + 56px);
+  background: #1c1917; transition: background .35s ease;
 }
 .appShell.archiveMode {
   height: 100dvh; min-height: 0; overflow: hidden;
   padding-bottom: 0;
 }
+.appShell.fingerprintCardMode { background: #000; }
+.workspace.resultMode .wheelStage > .wheel,
+.workspace.resultMode > .editor { transition: opacity .35s ease; }
+.fingerprintCardMode .workspace.resultMode .wheelStage > .wheel,
+.fingerprintCardMode .workspace.resultMode > .editor { opacity: 0; pointer-events: none; }
 
 /* ---------- topbar ---------- */
 /* One compact row: the filename gets smaller and clips rather than growing the bar. */
@@ -27,6 +33,7 @@ body {
   position: sticky; top: 0; z-index: 2; min-height: 36px;
   display: flex; align-items: center; white-space: nowrap; gap: 0 1ch; padding: 5px 14px;
   background: #241f1d; color: #e7e0d8;
+  transition: opacity .35s ease;
   /* Keep the controls at 16px for mobile; the filename is deliberately smaller below so the
      pane stays one line. */
   font: 600 16px 'JetBrains Mono', ui-monospace, monospace;
@@ -120,6 +127,7 @@ body {
 }
 .runCardOverlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: flex; justify-content: center; }
 .runCardOverlay .shareCard { animation: cardExpand .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: center; }
+.finalCardOverlay { pointer-events: auto; }
 .finalCardOverlay .shareCard { animation: none; }
 .archiveScreen {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
@@ -203,6 +211,14 @@ body {
 .punc { color: #574d46; }        /* commas, semicolons — structure, not content */
 .datePicker { border: 0; padding: 0; background: none; font: inherit; cursor: pointer; }
 .pane.overlayScreen { z-index: 5; }
+.pane.fingerprintCardHeader { opacity: 0; pointer-events: none; }
+.saveFingerprint {
+  position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%); z-index: 6;
+  padding: 9px 14px; border: 0; border-radius: 4px;
+  background: #241f1d; color: #e7e0d8;
+  font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
+}
+.saveFingerprint:active { background: #d9a066; color: #1c1917; }
 .pane.browsing { position: sticky; top: 0; z-index: 5; flex: 0 0 auto; }
 .archivePaneBack {
   display: block; width: 100%; border: 0; padding: 1px 0; background: none; color: #e7e0d8;
@@ -290,6 +306,11 @@ body {
     width: var(--wheel-size); height: var(--wheel-size); aspect-ratio: auto; margin-inline: 0;
   }
   .wheelStage .shareCard { height: calc(100% - 12px); margin: 12px 10px 0; }
+  .saveFingerprint {
+    position: fixed; top: auto; left: auto; transform: none;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
   .editor {
     grid-column: 2; grid-row: 1; align-self: start; min-height: 0;
     height: auto; position: relative;

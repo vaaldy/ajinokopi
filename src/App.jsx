@@ -93,7 +93,7 @@ export default function App() {
   const [flavors, setFlavors] = useState(null);
   const [store, setStore] = useState(loadStore);
   const [copied, setCopied] = useState(false);
-  const [screen, setScreen] = useState('wheel'); // wheel | card | archive
+  const [screen, setScreen] = useState('wheel'); // wheel | card | fingerprint | archive
   const [running, setRunning] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [wheelFingerprint, setWheelFingerprint] = useState(null);
@@ -121,7 +121,7 @@ export default function App() {
   }, []);
 
   const cur = store.brews.find(b => b._id === store.currentId);
-  const ran = screen === 'card', browsing = screen === 'archive';
+  const ran = screen === 'card', fingerprintView = screen === 'fingerprint', browsing = screen === 'archive';
   useEffect(() => {
     clearTimeout(screenTimer.current);
     setScreen('wheel'); setWheelFingerprint(null);
@@ -181,6 +181,8 @@ export default function App() {
   });
   const activeFingerprint = wheelFingerprint || { tones: cardTones, baseCol: cardBase };
   const spectrumCard = <SpectrumCard brew={cur} flavors={flavors} fingerprint={activeFingerprint} />;
+  const openableSpectrumCard = <SpectrumCard brew={cur} flavors={flavors} fingerprint={activeFingerprint}
+                                                onOpen={() => setScreen(fingerprintView ? 'card' : 'fingerprint')} />;
   const sortedBrews = [...store.brews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   // Every field is as wide as what it holds (mono, so a char count is a width; +6px is the
@@ -228,6 +230,75 @@ export default function App() {
     setTimeout(() => setCopied(false), 1000);
   };
 
+  const exportCardJpg = async () => {
+    const card = document.querySelector('.finalCardOverlay .shareCard');
+    if (!card) return;
+    await document.fonts?.ready;
+    const rect = card.getBoundingClientRect();
+    const sourceSvg = card.querySelector('.cardFingerprint').cloneNode(true);
+    sourceSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    sourceSvg.setAttribute('width', rect.width);
+    sourceSvg.setAttribute('height', rect.height);
+    const svgUrl = URL.createObjectURL(new Blob(
+      [new XMLSerializer().serializeToString(sourceSvg)], { type: 'image/svg+xml;charset=utf-8' }
+    ));
+    const image = new Image();
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve; image.onerror = reject; image.src = svgUrl;
+      });
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(rect.width * scale);
+      canvas.height = Math.round(rect.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.fillStyle = getComputedStyle(card).backgroundColor;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      ctx.drawImage(image, 0, 0, rect.width, rect.height);
+
+      const drawText = el => {
+        if (!el) return;
+        const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+        const size = parseFloat(style.fontSize), lineHeight = parseFloat(style.lineHeight) || size * 1.2;
+        ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        ctx.fillStyle = style.color; ctx.textBaseline = 'top';
+        const x = box.left - rect.left, maxWidth = box.width;
+        let y = box.top - rect.top;
+        (el.innerText || el.textContent).split('\n').forEach(paragraph => {
+          let line = '';
+          paragraph.split(/\s+/).filter(Boolean).forEach(word => {
+            const next = line ? `${line} ${word}` : word;
+            if (line && ctx.measureText(next).width > maxWidth) {
+              ctx.fillText(line, x, y); y += lineHeight; line = word;
+            } else line = next;
+          });
+          if (line) ctx.fillText(line, x, y);
+          y += lineHeight;
+        });
+      };
+      ['.shareCardDate', 'h2', '.shareCardMeta', '.shareCardNotes', '.shareCardRemark']
+        .forEach(selector => drawText(card.querySelector(selector)));
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.94));
+      if (!blob) throw new Error('JPEG export failed');
+      const filename = `${slug(cur.name)}-fingerprint.jpg`;
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: cur.name || 'Coffee fingerprint' });
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 0);
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') alert('Could not save this fingerprint as JPG');
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  };
+
   const exportJson = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(store.brews, null, 2)], { type: 'application/json' }));
@@ -251,10 +322,10 @@ export default function App() {
   };
 
   return (
-    <div className={'appShell' + (browsing ? ' archiveMode' : '')}>
+    <div className={'appShell' + (browsing ? ' archiveMode' : '') + (fingerprintView ? ' fingerprintCardMode' : '')}>
       {/* The top pane of a terminal: session block, then the path of the one file open in it —
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
-      <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || browsing) ? ' overlayScreen' : '')}>
+      <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || fingerprintView || browsing) ? ' overlayScreen' : '') + (fingerprintView ? ' fingerprintCardHeader' : '')}>
         {browsing ? (
           <button className="archivePaneBack" onClick={() => {
             archiveScroll.current = archiveRef.current?.scrollTop || 0;
@@ -338,7 +409,7 @@ export default function App() {
           ))}
         </main>
       ) : (
-      <main className={'workspace' + (ran ? ' resultMode' : '') + (running ? ' running' : '')}>
+      <main className={'workspace' + ((ran || fingerprintView) ? ' resultMode' : '') + (running ? ' running' : '')}>
       <section className="wheelStage">
         <Wheel key={cur._id} flavors={flavors} notes={cur.notes} intensity={cur.scores.Intensity}
                runAway={running} returning={restoring}
@@ -355,7 +426,8 @@ export default function App() {
                  updateCur(b => ({ ...b, notes: [...b.notes, { category, note, ts: new Date().toISOString() }] }))}
                onRemove={i => updateCur(b => ({ ...b, notes: b.notes.filter((_, j) => j !== i) }))} />
         {running && <div className="runCardOverlay">{spectrumCard}</div>}
-        {ran && <div className="runCardOverlay finalCardOverlay">{spectrumCard}</div>}
+        {(ran || fingerprintView) && <div className="runCardOverlay finalCardOverlay">{openableSpectrumCard}</div>}
+        {fingerprintView && <button className="saveFingerprint" onClick={exportCardJpg}>save jpg</button>}
       </section>
 
       {/* The whole sheet as one function: the coffee is the signature, everything measured about
