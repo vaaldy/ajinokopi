@@ -43,13 +43,31 @@ function brewRows(brews, open) {
 // The coffee line: one field per part, read left to right as "washed natural ethiopia".
 const TRIO = [['process', 'Process'], ['origin', 'Origin'], ['varietal', 'Varietal']];
 
-function SpectrumCard({ brew, flavors, fingerprint, compact = false }) {
+function SpectrumCard({ brew, flavors, fingerprint, compact = false, onOpen }) {
+  const press = useRef(null);
   const ring = ringOrder(Object.keys(flavors), flavors);
   const colorOf = (category, note) => noteColorOf(flavors, category, note);
   const fallback = fingerprintTones({ notes: brew.notes, colorOf, ringSegs: ring, cx: 195, cy: 195, r: 195 });
   const fp = fingerprint || fallback;
+  const openOnTap = e => {
+    const start = press.current;
+    if (!start || start.id !== e.pointerId || start.moved) return;
+    press.current = null;
+    onOpen?.(brew);
+  };
   return (
-    <article className={'shareCard' + (compact ? ' archiveCard' : '')} style={{ background: fp.baseCol }}>
+    <article className={'shareCard' + (compact ? ' archiveCard' : '')} style={{ background: fp.baseCol }}
+             {...(onOpen && {
+               role: 'button', tabIndex: 0,
+               onPointerDown: e => { if (e.isPrimary) press.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false }; },
+               onPointerMove: e => {
+                 const start = press.current;
+                 if (start?.id === e.pointerId && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) start.moved = true;
+               },
+               onPointerCancel: () => { press.current = null; },
+               onPointerUp: openOnTap,
+               onKeyDown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(brew); } },
+             })}>
       <svg className="cardFingerprint" viewBox="0 0 390 390" preserveAspectRatio="none" aria-hidden="true">
         <Fingerprint cx={195} cy={195} r={195} tones={fp.tones} baseCol={fp.baseCol}
                      sat="saturate(1)" idPrefix={'cardfp-' + brew._id} decorations={false} clipDisc={false} />
@@ -89,6 +107,8 @@ export default function App() {
   const handleRef = useRef();
   const menuRef = useRef();
   const screenTimer = useRef();
+  const archiveRef = useRef();
+  const archiveScroll = useRef(0);
 
   useEffect(() => {
     fetch('flavors.yaml').then(r => r.text()).then(t => setFlavors(yaml.load(t)));
@@ -113,7 +133,7 @@ export default function App() {
   useLayoutEffect(() => {
     if (!browsing) return undefined;
     document.activeElement?.blur();
-    window.scrollTo(0, 0);
+    archiveRef.current.scrollTop = archiveScroll.current;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = overflow; };
@@ -236,7 +256,10 @@ export default function App() {
           brews/<date>/<name>, each day its own directory. Renaming the cup renames the file. */}
       <header className={'pane' + (browsing ? ' browsing' : '') + ((ran || browsing) ? ' overlayScreen' : '')}>
         {browsing ? (
-          <button className="archivePaneBack" onClick={() => setScreen('wheel')}>&lt; back to wheel + terminal</button>
+          <button className="archivePaneBack" onClick={() => {
+            archiveScroll.current = archiveRef.current?.scrollTop || 0;
+            setScreen('wheel');
+          }}>&lt; back to wheel + terminal</button>
         ) : <>
         {/* the session block doubles as the system menu: tap it for the ops that act on the
             whole store rather than on one cup */}
@@ -303,8 +326,16 @@ export default function App() {
       <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importJson} />
 
       {browsing ? (
-        <main className="archiveScreen">
-          {sortedBrews.map(b => <SpectrumCard key={b._id} brew={b} flavors={flavors} compact />)}
+        <main className="archiveScreen" ref={archiveRef}
+              onScroll={e => { archiveScroll.current = e.currentTarget.scrollTop; }}>
+          {sortedBrews.map(b => (
+            <SpectrumCard key={b._id} brew={b} flavors={flavors} compact
+                          onOpen={brew => {
+                            archiveScroll.current = archiveRef.current?.scrollTop || 0;
+                            setStore(s => ({ ...s, currentId: brew._id }));
+                            setScreen('wheel');
+                          }} />
+          ))}
         </main>
       ) : (
       <main className={'workspace' + (ran ? ' resultMode' : '') + (running ? ' running' : '')}>
