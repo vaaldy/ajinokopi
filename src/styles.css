@@ -179,7 +179,7 @@ body {
 }
 .peStage {
   flex: 0 0 clamp(190px, 28dvh, 240px); height: clamp(190px, 28dvh, 240px);
-  display: grid; place-items: center; overflow: hidden; background: #1c1917;
+  display: grid; place-items: center; overflow: hidden; background: #16120f;
 }
 .peStage .wheel { width: min(62vw, 230px); }
 .peDeck {
@@ -212,20 +212,19 @@ body {
   min-width: 28px; padding: 4px 7px; border-radius: 999px;
   background: #16120f; color: #8d8177; text-align: center; font-size: 12px;
 }
-.peIcon, .peReset, .peFamilyTools button, .peNoteTools button, .peAdd {
+.peIcon, .peNoteRemove, .peFamilyTools button, .peNoteTools button, .peAdd {
   min-width: 44px; min-height: 44px; border: 0; background: none; color: #a89c92;
   font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
 }
 .peIcon { font-size: 22px; }
 .peFamilyTools, .peNoteTools { display: flex; gap: 8px; padding: 0 8px 8px 60px; }
-.peFamilyTools button:last-child, .peNoteTools button:last-child { margin-left: auto; }
-.peFamilyTools button.armed, .peNoteTools button.armed { border-radius: 6px; background: #c97b6f; color: #1c1917; }
-.peFamilyTools button:disabled, .peNoteTools button:disabled { opacity: .25; }
+.peFamilyTools button:last-child { margin-left: auto; }
+.peFamilyTools button.armed, .peNoteRemove.armed { border-radius: 6px; background: #c97b6f; color: #1c1917; }
+.peFamilyTools button:disabled, .peNoteTools button:disabled, .peNoteRemove:disabled { opacity: .25; }
 .peNotes { margin: 0 8px 8px 28px; padding: 8px; border-radius: 8px; background: #1c1917; }
 .peNote { margin-bottom: 8px; border-radius: 8px; background: #241f1d; }
 .peNoteMain { grid-template-columns: 44px minmax(0, 1fr) auto; }
-.peReset { padding-inline: 8px; color: #d9a066; }
-.peInherited { padding: 0 8px; color: #6b5c50; font-size: 12px; }
+.peNoteRemove { padding-inline: 8px; color: #c97b6f; }
 .peNoteTools { padding-left: 60px; }
 .peAdd { width: 100%; text-align: left; color: #d9a066; }
 .peAdd.family { margin-top: 4px; padding-left: 12px; }

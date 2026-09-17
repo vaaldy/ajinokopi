@@ -416,6 +416,11 @@ export default function App() {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
+  const selectFlavorProfile = id => {
+    localStorage.setItem('activeFlavorProfileId', id);
+    setProfileStore(s => ({ ...s, activeId: id }));
+  };
+
   const rmFlavorProfile = profile => {
     if (!window.confirm(`rm ${slug(profile.name)} — delete this flavor profile?`)) return;
     setProfileStore(s => ({
@@ -591,7 +596,7 @@ export default function App() {
               return (
                 <div className={'profileRow' + (active ? ' active' : '')} key={profile._id}>
                   <button className="profilePick" aria-pressed={active}
-                          onClick={() => setProfileStore(s => ({ ...s, activeId: profile._id }))}>
+                          onClick={() => selectFlavorProfile(profile._id)}>
                     <span>{active ? '[x]' : '[ ]'} {profile.name}</span>
                     <small>{profile.bundled ? 'bundled' : 'browser'} · {familyCount} families · {noteCount} notes</small>
                   </button>
@@ -617,8 +622,7 @@ export default function App() {
           </section>
           <section className="peDeck">
             <div className="peDeckIntro">
-              <h1>Shape your wheel</h1>
-              <p>Families form the ring. Notes open from each family.</p>
+              <h1>Customize your flavor wheel</h1>
               {!draftValid && <p className="peError">Names must be filled and unique before saving.</p>}
             </div>
             {editingDraft.families.map((family, fi) => {
@@ -636,7 +640,7 @@ export default function App() {
                     <span className="peCount">{family.notes.length}</span>
                     <button className="peIcon" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${family.name}`}
                             onClick={() => setOpenFamilies(o => ({ ...o, [family._key]: !expanded }))}>
-                      {expanded ? '−' : '+'}
+                      {expanded ? '▾' : '▸'}
                     </button>
                   </div>
                   <div className="peFamilyTools">
@@ -664,21 +668,18 @@ export default function App() {
                               </label>
                               <input className="peName" value={note.name} aria-label={`Note ${ni + 1} name`}
                                      onChange={e => updateNote(fi, ni, n => ({ ...n, name: e.target.value }))} />
-                              {note.color
-                                ? <button className="peReset" onClick={() => updateNote(fi, ni, n => ({ ...n, color: null }))}>use family</button>
-                                : <span className="peInherited">inherited</span>}
-                            </div>
-                            <div className="peNoteTools">
-                              <button disabled={ni === 0} onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, -1) }))}>↑</button>
-                              <button disabled={ni === family.notes.length - 1}
-                                      onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, 1) }))}>↓</button>
-                              <button className={armedDelete === `note:${note._key}` ? 'armed' : ''}
+                              <button className={'peNoteRemove' + (armedDelete === `note:${note._key}` ? ' armed' : '')}
                                       disabled={family.notes.length === 1}
                                       onClick={() => armDelete(`note:${note._key}`, () => updateFamily(fi, f => ({
                                         ...f, groups: undefined, notes: f.notes.filter(n => n._key !== note._key),
                                       })))}>
                                 {armedDelete === `note:${note._key}` ? 'confirm?' : 'remove'}
                               </button>
+                            </div>
+                            <div className="peNoteTools">
+                              <button disabled={ni === 0} onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, -1) }))}>↑</button>
+                              <button disabled={ni === family.notes.length - 1}
+                                      onClick={() => updateFamily(fi, f => ({ ...f, notes: moved(f.notes, ni, 1) }))}>↓</button>
                             </div>
                           </div>
                         );

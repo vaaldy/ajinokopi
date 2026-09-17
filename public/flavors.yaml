@@ -136,13 +136,18 @@ Herbal / Tea:
     tomato: "#e3aaa0"
 
 Defects:
-  color: "#cbc6bd"
-  notes: [papery, baggy, potato, phenolic, over-ferment, moldy, rubber]
+  color: "#75685f"
+  groups: [4, 7]
+  notes: [roasty, smoky, ashy, burnt, papery, baggy, potato, phenolic, over-ferment, moldy, rubber]
   noteColors:
-    papery: "#ddd8cf"
-    baggy: "#cfc9bf"
-    potato: "#c6c2b0"
-    phenolic: "#c2b3b3"
-    over-ferment: "#cbb9c4"
-    moldy: "#b9c2b4"
-    rubber: "#b3b0ac"
+    roasty: "#725847"
+    smoky: "#554c47"
+    ashy: "#716b66"
+    burnt: "#3f3732"
+    papery: "#b5aa9c"
+    baggy: "#9c8c7f"
+    potato: "#a49b83"
+    phenolic: "#6f6262"
+    over-ferment: "#866d77"
+    moldy: "#6d796b"
+    rubber: "#4d4946"

@@ -214,6 +214,10 @@ const herbalTeaBlock = yamlText.match(/^Herbal \/ Tea:\n(?:(?:  .*\n)|\n)*/m)?.[
 t('flavors.yaml: Herbal / Tea has the chosen five-note outer band',
   herbalTeaBlock.includes('groups: [7, 5]') &&
   herbalTeaBlock.includes('notes: [green tea, oolong, black tea, white tea, pu-erh, matcha, hojicha, thyme, rhubarb, herbal, peppery, tomato]'));
+const defectsBlock = yamlText.match(/^Defects:\n(?:(?:  .*\n)|\n)*/m)?.[0] || '';
+t('flavors.yaml: roasty notes form dark inner Defects band',
+  defectsBlock.includes('color: "#75685f"') && defectsBlock.includes('groups: [4, 7]') &&
+  defectsBlock.includes('notes: [roasty, smoky, ashy, burnt, papery'));
 t('flavors.yaml: every note colour is a hex triple', (yamlText.match(/^\s{4}[^\s:][^:]*: "#[0-9a-f]{6}"$/gm) || []).length >= 60);
 
 for (const [name, ok] of results) console.log((ok ? 'PASS' : 'FAIL') + ' ' + name);
