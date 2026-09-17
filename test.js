@@ -19,6 +19,7 @@ const O = [ORIGIN.x, ORIGIN.y];
 t('sectorPath is a closed path', /^M[\s\S]*Z$/.test(sectorPath(...O, 0, 90, 84, 126)));
 t('sectorPath no NaN', !sectorPath(...O, 0, 90, 84, 126).includes('NaN'));
 t('sectorPath handles negative angles', !sectorPath(...O, -46, -19, 132, 178).includes('NaN'));
+t('sectorPath renders a full 360-degree annulus', (sectorPath(...O, 30, 390, 84, 126).match(/A/g) || []).length === 4);
 t('polar 0deg points up', polar(...O, 100, 0)[1] === 95);
 t('polar 90deg points right', polar(...O, 100, 90)[0] === 295);
 t('capsulePath is closed and clean', /^M[\s\S]*Z$/.test(capsulePath(...O, 0, 40, 61, 79)));

@@ -20,7 +20,14 @@ export function polar(cx, cy, r, deg) {
 }
 
 export function sectorPath(cx, cy, a0, a1, r0, r1) {
-  const lg = a1 - a0 > 180 ? 1 : 0, p = (r, a) => polar(cx, cy, r, a).map(v => v.toFixed(2));
+  const sweep = a1 - a0, p = (r, a) => polar(cx, cy, r, a).map(v => v.toFixed(2));
+  if (sweep >= 359.999) {
+    const [xo0, yo0] = p(r1, a0), [xo1, yo1] = p(r1, a0 + 180);
+    const [xi0, yi0] = p(r0, a0), [xi1, yi1] = p(r0, a0 + 180);
+    return `M${xo0} ${yo0}A${r1} ${r1} 0 1 1 ${xo1} ${yo1}A${r1} ${r1} 0 1 1 ${xo0} ${yo0}` +
+           `L${xi0} ${yi0}A${r0} ${r0} 0 1 0 ${xi1} ${yi1}A${r0} ${r0} 0 1 0 ${xi0} ${yi0}Z`;
+  }
+  const lg = sweep > 180 ? 1 : 0;
   const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
   return `M${x0} ${y0}A${r1} ${r1} 0 ${lg} 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 ${lg} 0 ${x3} ${y3}Z`;
 }

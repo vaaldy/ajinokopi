@@ -4,7 +4,7 @@
    for Safari's initial-scale computation. */
 html, body { height: 100%; overflow-x: clip; }
 body {
-  font-family: system-ui, sans-serif;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   background: #1c1917; color: #e7e0d8;
   -webkit-user-select: none; user-select: none;
 }
@@ -139,7 +139,7 @@ body {
   flex: 1 1 auto; min-height: 0; overflow-y: auto;
   padding: 12px 10px calc(env(safe-area-inset-bottom, 0px) + 68px);
   background: #16120f; color: #e7e0d8;
-  font: 500 15px/1.45 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font: 500 15px/1.45 'JetBrains Mono', ui-monospace, monospace;
 }
 .profilesTitle { padding: 5px 10px; background: #241f1d; color: #d9a066; }
 .profilesHelp { margin: 10px 0 14px; color: #8d8177; }
@@ -160,12 +160,12 @@ body {
 .importProfile { min-height: 44px; padding: 10px; color: #d9a066; }
 .profileManagerHeader, .profileManagerHeader .archivePaneBack, .profileEditorHeader,
 .profileEditorScreen, .profileEditorScreen input, .profileEditorScreen button {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 .profileEditorHeader { gap: 8px; }
 .peCancel, .peSave {
   min-height: 44px; padding: 0 8px; border: 0; background: none; color: #d9a066;
-  font: 600 15px system-ui, sans-serif;
+  font: 600 15px 'JetBrains Mono', ui-monospace, monospace;
 }
 .peSave:disabled { color: #574d46; }
 .peProfileName {
@@ -188,7 +188,7 @@ body {
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
 .peDeckIntro { margin-bottom: 16px; }
-.peDeckIntro h1 { font: 650 24px/1.1 system-ui, sans-serif; }
+.peDeckIntro h1 { font: 600 24px/1.1 'JetBrains Mono', ui-monospace, monospace; }
 .peDeckIntro p { margin-top: 6px; color: #8d8177; font-size: 14px; }
 .peDeckIntro .peError { color: #c97b6f; }
 .peFamilyCard { margin-bottom: 10px; overflow: hidden; border-radius: 10px; background: #241f1d; }
@@ -214,7 +214,7 @@ body {
 }
 .peIcon, .peReset, .peFamilyTools button, .peNoteTools button, .peAdd {
   min-width: 44px; min-height: 44px; border: 0; background: none; color: #a89c92;
-  font: 600 14px system-ui, sans-serif;
+  font: 600 14px 'JetBrains Mono', ui-monospace, monospace;
 }
 .peIcon { font-size: 22px; }
 .peFamilyTools, .peNoteTools { display: flex; gap: 8px; padding: 0 8px 8px 60px; }
@@ -291,7 +291,7 @@ body {
 .shareCardShade { position: relative; z-index: 1; height: 100%; min-height: 180px; padding: 14px; border-radius: inherit; background: transparent; }
 .shareCardHead { display: flex; justify-content: space-between; gap: 1ch; color: #574d46; font-size: 11px; text-transform: uppercase; }
 .shareCardDate { color: #574d46; font: 600 16px 'JetBrains Mono', ui-monospace, monospace; text-transform: none; }
-.shareCard h2 { margin: 28px 0 4px; font: 600 22px/1.15 system-ui, sans-serif; }
+.shareCard h2 { margin: 28px 0 4px; font: 600 22px/1.15 'JetBrains Mono', ui-monospace, monospace; }
 .shareCard p { margin-top: 8px; }
 .shareCardMeta { color: #574d46; }
 .shareCardNotes { font-size: 13px; color: #574d46; }
